@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -93,9 +94,8 @@ func TestServer_Start_Stop(t *testing.T) {
 
 	// Start in a goroutine
 	go func() {
-		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
-			// We can't t.Error here easily, but we can print
-			// Just ensure it doesn't panic
+		if err := srv.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Errorf("Server failed to start: %v", err)
 		}
 	}()
 

@@ -61,6 +61,9 @@ func (s *Store) FindMatch(method, path, body string) (models.Expectation, bool) 
 
 // GetHistory returns requests history (in reverse order)
 func (s *Store) GetHistory(reverse bool) []models.HistoryItem {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	if !reverse {
 		return s.history
 	}
@@ -75,7 +78,13 @@ func (s *Store) GetHistory(reverse bool) []models.HistoryItem {
 
 // DumpAvailableExpectations return available expectations
 func (s *Store) DumpAvailableExpectations() []models.Expectation {
-	return append([]models.Expectation{}, s.expectations...)
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	expectationsCopy := make([]models.Expectation, len(s.expectations))
+	copy(expectationsCopy, s.expectations)
+
+	return expectationsCopy
 }
 
 // AddExpectations adds multiple expectations to the store.
