@@ -73,7 +73,7 @@ func (s *Store) GetHistory(reverse bool) []models.HistoryItem {
 	return reversed
 }
 
-// DumpAvailableExpectations return available expecations
+// DumpAvailableExpectations return available expectations
 func (s *Store) DumpAvailableExpectations() []models.Expectation {
 	return append([]models.Expectation{}, s.expectations...)
 }
