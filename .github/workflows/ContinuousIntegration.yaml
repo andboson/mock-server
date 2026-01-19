@@ -1,0 +1,56 @@
+name: ContinuousIntegration
+on:
+  pull_request:
+    types:
+      - synchronize # PR commits
+      - opened
+      - ready_for_review
+      - reopened
+  release:
+    types:
+      - prereleased
+
+jobs:
+  LintAndTest:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ./go.mod
+          cache: false
+
+      - uses: actions/cache@v4
+        if: github.event_name == 'pull_request'
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-mod--${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-mod-          
+
+      - name: Format
+        run: if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then exit 1; fi
+
+      - name: Generate mocks
+        run: make generate
+
+      - name: golangci-lint
+        if: github.event_name == 'pull_request'
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.8
+          args: --timeout=5m
+          skip-cache: true
+          only-new-issues: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Unit Tests on changed packages
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          make generate
+          make dep
+          make test
