@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Mock server</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <link rel="stylesheet"
+          href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <style>
+    .curl {
+      display: none;
+    }
+    th.req {
+      width: 65%;
+    }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>MOCK SERVER</h2>
+    <p>The list of received requests:</p>
+    <table class="table table-hover">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>cURL</th>
+            <th>RemoteAddr</th>
+            <th class="req">Request</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{ range $i, $d := . }}
+        <tr>
+            <td>{{ $i }}</td>
+            <td>{{ .Date.Format "02-01-2006 15:04:05 MST" }}</td>
+            <td>
+            <input type="text" class="curl" value="{{ .CurlCommand }}" id="curlCmd{{$i}}">
+                        <button class="curlCopy" onclick="myFunction({{$i}})" title="Copy Curl command to clipboard">
+                          curl
+                          </button>
+            </td>
+            <td>{{ .RemoteAddr }}</td>
+            <td>
+                {{ .PrintString }}
+            </td>
+        </tr>
+        {{ end }}
+        </tbody>
+    </table>
+</div>
+
+
+<script>
+function myFunction(id) {
+  var copyText = document.getElementById("curlCmd"+id);
+  copyText.select();
+  copyText.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(copyText.value);
+
+  var tooltip = document.getElementById("myTooltip");
+  tooltip.innerHTML = "Copied!"
+}
+
+</script>
+</body>
+</html>
