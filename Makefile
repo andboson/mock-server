@@ -11,7 +11,6 @@ generate:
 	go install go.uber.org/mock/mockgen/...@v0.1.0
 	go install golang.org/x/tools/cmd/stringer@latest
 	go generate -x ./internal/...
-	make sqlc
 
 build:
 	CGO_ENABLED=0 GOOS=${GOOS} go build -ldflags "-X=main.Revision=${REVISION} -X=main.Version=${VERSION}" -o bin/main ./cmd/main.go
