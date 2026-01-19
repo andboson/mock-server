@@ -1,6 +1,5 @@
 export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
-export GOPRIVATE=github.com/emma-sleep/*
 GOOS=$(shell go env GOOS)
 
 dep:
