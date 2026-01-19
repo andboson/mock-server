@@ -9,7 +9,7 @@ import (
 //go:embed *.tmpl
 var embedTpl embed.FS
 
-// Templates holds parsed a templates data
+// Templates holds parsed template data
 type Templates struct {
 	Tpls *template.Template
 }
