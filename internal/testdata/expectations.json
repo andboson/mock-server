@@ -1,0 +1,48 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/hello",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "mock": "{\"message\": \"Hello, World!\"}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/users/\\d+",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "mock": "{\"id\": 123, \"name\": \"John Doe\"}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/submit",
+    "request": ".*important.*",
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "mock": "{\"status\": \"created\"}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/data.xml",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/xml"
+    },
+    "mock": "<root><data>value</data></root>"
+  },
+  {
+    "method": "POST",
+    "path": "/test/.*",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "mock": "{\"message\": \"test\"}"
+  }
+]
