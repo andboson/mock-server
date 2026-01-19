@@ -37,9 +37,12 @@
     "mock": "<root><data>value</data></root>"
   },
   {
-      "method": "POST",
-      "path": "/api/.*",
-      "status": 204,
-      "mock": "{\"foo\": \"bar\"}"
+    "method": "POST",
+    "path": "/test/.*",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "mock": "{\"message\": \"test\"}"
   }
 ]
