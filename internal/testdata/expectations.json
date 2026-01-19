@@ -19,7 +19,7 @@
   },
   {
     "method": "POST",
-    "path": "/api/submit",
+    "path": "/api/v1/submit",
     "request": ".*important.*",
     "status": 201,
     "headers": {
