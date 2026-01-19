@@ -45,7 +45,7 @@ func (s *Store) AddHistory(item models.HistoryItem) {
 }
 
 // FindMatch searches for an expectation that matches the given method, path, and body.
-// It returns the matcher expectation and true if found, otherwise an empty expectation and false.
+// It returns the matching expectation and true if found, otherwise an empty expectation and false.
 func (s *Store) FindMatch(method, path, body string) (models.Expectation, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
