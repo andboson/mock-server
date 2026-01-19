@@ -75,7 +75,7 @@ func (s *Store) GetHistory(reverse bool) []models.HistoryItem {
 
 // DumpAvailableExpectations return available expecations
 func (s *Store) DumpAvailableExpectations() []models.Expectation {
-	return s.expectations[:len(s.expectations)]
+	return append([]models.Expectation{}, s.expectations...)
 }
 
 // AddExpectations adds multiple expectations to the store.
