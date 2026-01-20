@@ -6,9 +6,6 @@ on:
       - opened
       - ready_for_review
       - reopened
-  release:
-    types:
-      - prereleased
 
 jobs:
   LintAndTest:

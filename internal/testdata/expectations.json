@@ -52,6 +52,6 @@
     "headers": {
       "Content-Type": "application/json"
     },
-    "mock": "@./test_response.json"
+    "mock": "@./internal/testdata/test_response.json"
   }
 ]

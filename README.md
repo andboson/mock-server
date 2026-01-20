@@ -6,7 +6,8 @@ A simple, configurable HTTP mock server written in Go. It enables you to define 
 
 - **Flexible Matching**: Match requests by HTTP Method, Path (Regex supported), and Body (Regex supported).
 - **Custom Responses**: Define the Status Code, Headers, and Body for matched requests.
-- **Request History**: View a log of received requests and whether they matched an expectation.
+- **Request History**: View a log of received requests, including timestamps, remote addresses, and matching status.
+- **Copy cURL**: Easily copy the cURL command for any received request from the history dashboard.
 - **Web Interface**: Simple dashboard to view history.
 - **Configurable**: Load expectations via JSON/YAML files or Environment Variables.
 
@@ -20,16 +21,30 @@ The server is configured using Environment Variables:
 | `EXPECTATIONS_FILE` | Path to a JSON or YAML file containing expectations. | - |
 | `EXPECTATIONS_CONFIG_JSON` | JSON string containing expectations (useful for single-line config). | - |
 
+## Docker Compose
+
+You can easily run the mock server using Docker Compose. A `docker-compose.yaml` file is provided in the root directory.
+
+1.  Ensure you have Docker and Docker Compose installed.
+2.  (Optional) Edit `internal/testdata/expectations.yaml` or create your own expectations file and update the volume mapping in `docker-compose.yaml`.
+3.  Run the server:
+
+    ```bash
+    docker compose up
+    ```
+
+    The server will start on port `8081`.
+
 ### Expectation Format
 
 Each expectation is an object with the following fields:
 
-- `method`: HTTP Method (e.g., "POST", "GET").
-- `path`: URL path to match. Supports Regex (e.g., `^/api/v1/user/\d+$`).
+- `method`: HTTP Method (e.g., "POST", "GET"). Use `*` to match any method.
+- `path`: URL path to match. Supports Regex (e.g., `^/api/v1/user/\d+$`) or `*` to match any path.
 - `request`: Regex to match against the request body. If empty or `*`, matches any body.
 - `status`: HTTP Status Code to return (e.g., 200, 404).
 - `headers`: Map of HTTP headers to include in the response.
-- `mock`: The response body string.
+- `mock`: The response body string. Can start with `@` to load from a file (e.g. `@/path/to/response.json`).
 
 #### Example `expectations.json`
 
@@ -66,4 +81,3 @@ go build -o mock-server cmd/main.go
 ```
 
 Navigate to `http://localhost:8080` (or your configured port) to see the request history dashboard.
-
