@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  mock-server:
+    image: andboson/mock-server:latest
+    ports:
+      - "8881:8081"
+    environment:
+      - EXPECTATIONS_FILE=/app/expectations.yaml
+    volumes:
+      # Mount your local expectations file into the container
+      # Using the provided example file from internal/testdata
+      - ./internal/testdata/expectations.yaml:/app/expectations.yaml:ro
+      - ./internal/testdata/test_response.json:/app/test_response.json:ro
+    restart: unless-stopped
+    # Run as non-root user (matching Dockerfile)
+    user: "1001:1001"
+
+
+# another instance with inline JSON configuration
+  mock-server2:
+    image: andboson/mock-server:latest
+    ports:
+      - "8882:8082"
+    environment:
+      SERVER_ADDR_HTTP: ":8082"
+      EXPECTATIONS_CONFIG_JSON: |-
+        [
+            {
+              "method": "GET",
+              "path": "/api/hello",
+              "status": 200,
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "mock": "{\"message\": \"Hello from inline config!\"}"
+            },
+            {
+              "method": "POST",
+              "path": "/api/data",
+              "status": 200,
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "mock": "{\"status\": \"data received\"}"
+            }
+          ]
+    restart: unless-stopped
+    # Run as non-root user (matching Dockerfile)
+    user: "1001:1001"
+
+# Simple curl tests to verify the mock server
+  curl-tests:
+    image: curlimages/curl:latest
+    depends_on:
+      - mock-server
+    command: >
+      /bin/sh -c "
+        echo 'Waiting for server...';
+        sleep 2;
+        echo '';
+        echo 'Testing GET /api/hello';
+        curl http://mock-server:8081/api/hello;
+        echo '';echo '--------';
+        echo 'Testing GET /api/users/123';
+        curl http://mock-server:8081/api/users/123;
+        echo '';echo '--------';
+        echo 'Testing POST /api/v1/submit';
+        curl -X POST -d 'this is important data' http://mock-server:8081/api/v1/submit;
+        echo '';echo '--------';
+        echo 'Testing POST /test2/submit';
+        curl -X POST -d '{"foo":"bar"}' http://mock-server:8081/test2/submit;
+        echo '';echo '--------';
+      "

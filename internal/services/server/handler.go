@@ -34,6 +34,11 @@ func (h *Server) ServeMocks(w http.ResponseWriter, r *http.Request) {
 	// Create history item
 	// We pass a dereferenced request (copy), but since we restored the body, it can be read again.
 	// Note: HistoryItemFromHTTPRequest will also read and close the body of the copy.
+	if r.URL.Host == "" {
+		r.URL.Scheme = "http"
+		r.URL.Host = r.Host
+	}
+
 	histItem, err := models.HistoryItemFromHTTPRequest(*r)
 	if err != nil {
 		log.Printf("Failed to create history item: %v", err)
