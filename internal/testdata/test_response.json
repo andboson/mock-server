@@ -1,0 +1,13 @@
+{
+  "result": "This is a test response generated for the POST /test2/.* endpoint.",
+  "status": "success",
+  "data": {
+    "id": 1,
+    "info": "Sample data for testing."
+  },
+  "timestamp": "2024-06-15T12:00:00Z",
+  "notes": "This response is used for testing purposes.",
+  "additional": {
+    "meta": "Additional metadata can go here."
+  }
+}

@@ -32,6 +32,10 @@ func (s *Store) AddExpectation(e models.Expectation) error {
 		return fmt.Errorf("failed to compile regexp: %w", err)
 	}
 
+	if err := e.CheckMockResponse(); err != nil {
+		return fmt.Errorf("failed to check mock response: %w", err)
+	}
+
 	s.expectations = append(s.expectations, e)
 
 	return nil
