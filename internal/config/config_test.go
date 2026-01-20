@@ -89,7 +89,7 @@ func TestLoadExpectationsFromTestData(t *testing.T) {
 		c := &Config{}
 		err := c.LoadExpectationsFromFile("../testdata/expectations.json")
 		require.NoError(t, err)
-		require.Len(t, c.Expectations(), 5)
+		require.Len(t, c.Expectations(), 6)
 
 		e := c.Expectations()[0]
 		require.Equal(t, "GET", e.Method)
@@ -101,7 +101,7 @@ func TestLoadExpectationsFromTestData(t *testing.T) {
 		c := &Config{}
 		err := c.LoadExpectationsFromFile("../testdata/expectations.yaml")
 		require.NoError(t, err)
-		require.Len(t, c.Expectations(), 5)
+		require.Len(t, c.Expectations(), 6)
 
 		e := c.Expectations()[0]
 		require.Equal(t, "GET", e.Method)

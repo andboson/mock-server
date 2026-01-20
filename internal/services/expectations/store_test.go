@@ -1,6 +1,8 @@
 package expectations
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -46,6 +48,15 @@ func TestStore_AddExpectation(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Invalid mock response file",
+			expectation: models.Expectation{
+				Method:       "GET",
+				Path:         "/api/file",
+				MockResponse: "@nonexistent_file.json",
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -62,6 +73,29 @@ func TestStore_AddExpectation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStore_AddExpectation_FileLoading(t *testing.T) {
+	// Create temporary file
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "response.json")
+	fileContent := `{"message": "hello from file"}`
+	err := os.WriteFile(tmpFile, []byte(fileContent), 0o644)
+	require.NoError(t, err)
+
+	s := NewStore()
+	exp := models.Expectation{
+		Method:       "GET",
+		Path:         "/api/file",
+		MockResponse: "@" + tmpFile,
+	}
+
+	err = s.AddExpectation(exp)
+	require.NoError(t, err)
+
+	exps := s.DumpAvailableExpectations()
+	require.Len(t, exps, 1)
+	require.Equal(t, fileContent, exps[0].MockResponse)
 }
 
 func TestStore_AddExpectations(t *testing.T) {

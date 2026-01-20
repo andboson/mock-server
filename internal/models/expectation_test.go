@@ -1,6 +1,7 @@
 package models
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -355,4 +356,43 @@ func TestExpectation_String(t *testing.T) {
 	}
 	expected := "Expectation(Method=GET, Path=/api/test, Request=*, StatusCode=200)"
 	require.Equal(t, expected, e.String())
+}
+
+func TestExpectation_CheckMockResponse(t *testing.T) {
+	t.Run("no @ prefix", func(t *testing.T) {
+		e := &Expectation{
+			MockResponse: "simple response",
+		}
+		err := e.CheckMockResponse()
+		require.NoError(t, err)
+		require.Equal(t, "simple response", e.MockResponse)
+	})
+
+	t.Run("valid file", func(t *testing.T) {
+		content := "file content"
+		tmpfile, err := os.CreateTemp("", "mock_response_*.txt")
+		require.NoError(t, err)
+		defer os.Remove(tmpfile.Name()) //nolint:errcheck
+
+		_, err = tmpfile.WriteString(content)
+		require.NoError(t, err)
+		err = tmpfile.Close()
+		require.NoError(t, err)
+
+		e := &Expectation{
+			MockResponse: "@" + tmpfile.Name(),
+		}
+		err = e.CheckMockResponse()
+		require.NoError(t, err)
+		require.Equal(t, content, e.MockResponse)
+	})
+
+	t.Run("non-existent file", func(t *testing.T) {
+		e := &Expectation{
+			MockResponse: "@non_existent_file.txt",
+		}
+		err := e.CheckMockResponse()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "reading mock response file")
+	})
 }

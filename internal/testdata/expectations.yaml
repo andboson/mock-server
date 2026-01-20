@@ -33,3 +33,10 @@
   headers:
     Content-Type: application/json
   mock: '{"foo": "bar"}'
+
+- method": POST
+  path: /test2/.*
+  status: 200
+  headers:
+      Content-Type: application/json
+  mock: "@./test_response.json"

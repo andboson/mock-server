@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -25,6 +26,21 @@ type Expectation struct {
 
 func (e *Expectation) String() string {
 	return fmt.Sprintf("Expectation(Method=%s, Path=%s, Request=%s, StatusCode=%d)", e.Method, e.Path, e.Request, e.StatusCode)
+}
+
+// CheckMockResponse checks if MockResponse contains @ in it and tries to load the file content.
+func (e *Expectation) CheckMockResponse() error {
+	if strings.HasPrefix(e.MockResponse, "@") {
+		filePath := strings.TrimPrefix(e.MockResponse, "@")
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			return fmt.Errorf("reading mock response file: %w", err)
+		}
+
+		e.MockResponse = string(data)
+	}
+
+	return nil
 }
 
 // Compile prepares the regular expressions for the Path and Request fields.
