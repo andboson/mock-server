@@ -5,10 +5,15 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 // Expectation represents a mock rule containing request matching criteria and the expected response.
 type Expectation struct {
+	ID           uuid.UUID `json:"id" yaml:"-"`
+	MatchedCount int       `json:"matched_count"`
+
 	// Request matching criteria
 	Method  string `json:"method" yaml:"method"`
 	Path    string `json:"path" yaml:"path"`
@@ -19,6 +24,8 @@ type Expectation struct {
 	ResponseHeaders map[string]string `json:"headers" yaml:"headers"`
 	MockResponse    string            `json:"mock" yaml:"mock"`
 
+	FileSourceOriginal string `json:"-" yaml:"-"` // internal use: original file source if loaded from file
+
 	// Compiled regex patterns for matching
 	pathRegex    *regexp.Regexp
 	requestRegex *regexp.Regexp
@@ -26,6 +33,14 @@ type Expectation struct {
 
 func (e *Expectation) String() string {
 	return fmt.Sprintf("Expectation(Method=%s, Path=%s, Request=%s, StatusCode=%d)", e.Method, e.Path, e.Request, e.StatusCode)
+}
+
+func (e *Expectation) IncrementMatchedCount() {
+	e.MatchedCount++
+}
+
+func (e *Expectation) CreateID() {
+	e.ID = uuid.New()
 }
 
 // CheckMockResponse checks if MockResponse contains @ in it and tries to load the file content.
@@ -37,6 +52,7 @@ func (e *Expectation) CheckMockResponse() error {
 			return fmt.Errorf("reading mock response file: %w", err)
 		}
 
+		e.FileSourceOriginal = e.MockResponse
 		e.MockResponse = string(data)
 	}
 

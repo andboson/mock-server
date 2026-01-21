@@ -41,6 +41,10 @@ func NewServer(addr string, tpls *templates.Templates, store *expectations.Store
 		},
 	}
 
+	mux.HandleFunc("POST /api/expectation", s.AddExpectationHandler)
+	mux.HandleFunc("GET /api/expectation/{id}", s.CheckExpectationHandler)
+	mux.HandleFunc("DELETE /api/expectation/{id}", s.RemoveExpectationHandler)
+	mux.HandleFunc("GET /api/expectations", s.GetAllExpectationsHandler)
 	mux.Handle("/", s.createHTTPHandler())
 
 	return s

@@ -69,15 +69,46 @@ Each expectation is an object with the following fields:
 ]
 ```
 
+#### Example `expectations.yaml`
+
+```yaml
+- method: POST
+  path: /test/.*
+  status: 200
+  headers:
+    Content-Type: application/json
+  mock: '{"foo": "bar"}'
+  
+- method: POST
+  path: /test2/.*
+  status: 200
+  headers:
+    Content-Type: application/json
+  mock: "@/app/test_response.json"
+```
+  
+
 ## Running the Server
 
 ```bash
 # Using go run
 SERVER_ADDR_HTTP=:8080 EXPECTATIONS_FILE=./internal/testdata/expectations.json go run cmd/main.go
 
-# Or build and run
-go build -o mock-server cmd/main.go
-./mock-server
+# Or with docker
+docker run -p 8081:8081 -e SERVER_ADDR_HTTP=":8081" -e EXPECTATIONS_FILE="/app/expectations.yaml" -v $(pwd)/internal/testdata/expectations.yaml:/app/expectations.yaml mock-server:latest
 ```
 
-Navigate to `http://localhost:8080` (or your configured port) to see the request history dashboard.
+## API
+
+The server provides a REST API to manage expectations dynamically.
+
+### Endpoints
+
+- `POST /api/expectation`: Add a new expectation.
+- `GET /api/expectation/{id}`: Check if an expectation was matched.
+- `DELETE /api/expectation/{id}`: Remove an expectation.
+- `GET /api/expectations`: Get all registered expectations.
+
+### OpenAPI Specification
+
+An OpenAPI 3.0 specification is available in `openapi.yaml`. You can use this file with tools like Swagger UI or Postman to interact with the API.

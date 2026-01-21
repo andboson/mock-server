@@ -4,14 +4,12 @@ services:
   mock-server:
     image: andboson/mock-server:latest
     ports:
-      - "8881:8081"
+      - "8081:8081"
     environment:
-      - EXPECTATIONS_FILE=/app/expectations.yaml
+      - EXPECTATIONS_FILE=/app/data/expectations.yaml
     volumes:
-      # Mount your local expectations file into the container
-      # Using the provided example file from internal/testdata
-      - ./internal/testdata/expectations.yaml:/app/expectations.yaml:ro
-      - ./internal/testdata/test_response.json:/app/test_response.json:ro
+      # Mount your local expectations file and response json into the container
+      - ./internal/testdata/:/app/data/:ro
     restart: unless-stopped
     # Run as non-root user (matching Dockerfile)
     user: "1001:1001"

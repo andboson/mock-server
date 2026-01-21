@@ -35,7 +35,7 @@ func TestServer_ServeMocks(t *testing.T) {
 			},
 			MockResponse: `{"result":"success"}`,
 		}
-		require.NoError(t, store.AddExpectation(exp))
+		require.NoError(t, store.AddExpectation(&exp))
 
 		srv := &Server{
 			store: store,
@@ -96,7 +96,7 @@ func TestServer_ServeMocks(t *testing.T) {
 			MockResponse: "pong",
 			// StatusCode is 0 by default
 		}
-		require.NoError(t, store.AddExpectation(exp))
+		require.NoError(t, store.AddExpectation(&exp))
 
 		srv := &Server{
 			store: store,

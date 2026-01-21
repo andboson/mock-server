@@ -10,7 +10,7 @@ import (
 // Store holds the expectations and request history in memory.
 // It is safe for concurrent use.
 type Store struct {
-	expectations []models.Expectation
+	expectations []*models.Expectation
 	history      []models.HistoryItem
 	mu           sync.RWMutex
 }
@@ -18,14 +18,14 @@ type Store struct {
 // NewStore creates a new empty Store.
 func NewStore() *Store {
 	return &Store{
-		expectations: make([]models.Expectation, 0),
+		expectations: make([]*models.Expectation, 0),
 		history:      make([]models.HistoryItem, 0),
 	}
 }
 
 // AddExpectation adds a new expectation to the store.
 // It compiles the expectation's regexes before adding.
-func (s *Store) AddExpectation(e models.Expectation) error {
+func (s *Store) AddExpectation(e *models.Expectation) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := e.Compile(); err != nil {
@@ -36,9 +36,40 @@ func (s *Store) AddExpectation(e models.Expectation) error {
 		return fmt.Errorf("failed to check mock response: %w", err)
 	}
 
+	e.CreateID()
+
 	s.expectations = append(s.expectations, e)
 
 	return nil
+}
+
+// GetExpectation returns an expectation by ID.
+func (s *Store) GetExpectation(id string) (*models.Expectation, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, e := range s.expectations {
+		if e.ID.String() == id {
+			return e, nil
+		}
+	}
+
+	return nil, fmt.Errorf("expectation not found")
+}
+
+// RemoveExpectation removes an expectation by ID.
+func (s *Store) RemoveExpectation(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, e := range s.expectations {
+		if e.ID.String() == id {
+			s.expectations = append(s.expectations[:i], s.expectations[i+1:]...)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("expectation not found")
 }
 
 // AddHistory adds a recorded request to the history.
@@ -50,7 +81,7 @@ func (s *Store) AddHistory(item models.HistoryItem) {
 
 // FindMatch searches for an expectation that matches the given method, path, and body.
 // It returns the matching expectation and true if found, otherwise an empty expectation and false.
-func (s *Store) FindMatch(method, path, body string) (models.Expectation, bool) {
+func (s *Store) FindMatch(method, path, body string) (*models.Expectation, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -60,7 +91,7 @@ func (s *Store) FindMatch(method, path, body string) (models.Expectation, bool) 
 		}
 	}
 
-	return models.Expectation{}, false
+	return nil, false
 }
 
 // GetHistory returns requests history (in reverse order)
@@ -85,16 +116,22 @@ func (s *Store) DumpAvailableExpectations() []models.Expectation {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	expectationsCopy := make([]models.Expectation, len(s.expectations))
-	copy(expectationsCopy, s.expectations)
+	expectationsCopy := make([]models.Expectation, 0, len(s.expectations))
+	for _, expectation := range s.expectations {
+		cpy := *expectation
+		if cpy.FileSourceOriginal != "" {
+			cpy.MockResponse = cpy.FileSourceOriginal
+		}
+		expectationsCopy = append(expectationsCopy, cpy)
+	}
 
 	return expectationsCopy
 }
 
 // AddExpectations adds multiple expectations to the store.
 func (s *Store) AddExpectations(expectations []models.Expectation) error {
-	for i, expectation := range expectations {
-		if err := s.AddExpectation(expectation); err != nil {
+	for i := range expectations {
+		if err := s.AddExpectation(&expectations[i]); err != nil {
 			return fmt.Errorf("failed to add expectation at index %d: %w", i, err)
 		}
 	}

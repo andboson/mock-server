@@ -45,6 +45,7 @@ func (h *Server) ServeMocks(w http.ResponseWriter, r *http.Request) {
 	} else {
 		histItem.MockMatched = found
 		if found {
+			exp.IncrementMatchedCount()
 			histItem.BodyMock = exp.MockResponse
 		}
 		h.store.AddHistory(*histItem)

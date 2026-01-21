@@ -39,4 +39,4 @@
   status: 200
   headers:
       Content-Type: application/json
-  mock: "@/app/test_response.json"
+  mock: "@/app/data/test_response.json"
