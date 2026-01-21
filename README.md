@@ -10,6 +10,7 @@ A simple, configurable HTTP mock server written in Go. It enables you to define 
 - **Copy cURL**: Easily copy the cURL command for any received request from the history dashboard.
 - **Web Interface**: Simple dashboard to view history.
 - **Configurable**: Load expectations via JSON/YAML files or Environment Variables.
+- **REST API**: Manage and check expectations dynamically via a RESTful API.
 
 ## Configuration
 
@@ -112,3 +113,56 @@ The server provides a REST API to manage expectations dynamically.
 ### OpenAPI Specification
 
 An OpenAPI 3.0 specification is available in `openapi.yaml`. You can use this file with tools like Swagger UI or Postman to interact with the API.
+
+## Go Client
+
+The project includes a Go client library in `pkg/client` for interacting with the mock server programmatically. This is particularly useful for integration tests where you need to dynamicall set up expectations.
+
+### Installation
+
+```bash
+go get andboson/mock-server/pkg/client
+```
+
+### Usage Example
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"andboson/mock-server/pkg/client"
+)
+
+func main() {
+	// Initialize the client
+	c := client.New("http://localhost:8081", nil)
+	ctx := context.Background()
+
+	// Create an expectation
+	exp := client.ExpectationCreate{
+		Method:       "GET",
+		Path:         "/api/data",
+		StatusCode:   200,
+		MockResponse: `{"status": "ok"}`,
+	}
+
+	idResp, err := c.CreateExpectation(ctx, exp)
+	if err != nil {
+		log.Fatalf("Failed to create expectation: %v", err)
+	}
+	fmt.Printf("Expectation created with ID: %s\n", idResp.ID)
+
+	// Check if expectation was matched
+	status, err := c.CheckExpectation(ctx, idResp.ID)
+	if err != nil {
+		log.Fatalf("Failed to check status: %v", err)
+	}
+	fmt.Printf("Matched: %v\n", status.Matched)
+}
+```
+
+
