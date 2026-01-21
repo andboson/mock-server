@@ -59,7 +59,7 @@ Each expectation is an object with the following fields:
 SERVER_ADDR_HTTP=:8080 EXPECTATIONS_FILE=./internal/testdata/expectations.json go run cmd/main.go
 
 # Or with docker
-docker run -p 8081:8081 -e SERVER_ADDR_HTTP=":8081" -e EXPECTATIONS_FILE="/app/expectations.yaml" -v $(pwd)/internal/testdata/expectations.yaml:/app/expectations.yaml docker pull andboson/mock-server:latest
+docker run -p 8081:8081 -e SERVER_ADDR_HTTP=":8081" -e EXPECTATIONS_FILE="/app/expectations.yaml" -v $(pwd)/internal/testdata/expectations.yaml:/app/expectations.yaml andboson/mock-server:latest
 ```
 
 
