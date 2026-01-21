@@ -22,20 +22,6 @@ The server is configured using Environment Variables:
 | `EXPECTATIONS_FILE` | Path to a JSON or YAML file containing expectations. | - |
 | `EXPECTATIONS_CONFIG_JSON` | JSON string containing expectations (useful for single-line config). | - |
 
-## Docker Compose
-
-You can easily run the mock server using Docker Compose. A `docker-compose.yaml` file is provided in the root directory.
-
-1.  Ensure you have Docker and Docker Compose installed.
-2.  (Optional) Edit `internal/testdata/expectations.yaml` or create your own expectations file and update the volume mapping in `docker-compose.yaml`.
-3.  Run the server:
-
-    ```bash
-    docker compose up
-    ```
-
-    The server will start on port `8081`.
-
 ### Expectation Format
 
 Each expectation is an object with the following fields:
@@ -46,29 +32,6 @@ Each expectation is an object with the following fields:
 - `status`: HTTP Status Code to return (e.g., 200, 404).
 - `headers`: Map of HTTP headers to include in the response.
 - `mock`: The response body string. Can start with `@` to load from a file (e.g. `@/path/to/response.json`).
-
-#### Example `expectations.json`
-
-```json
-[
-  {
-    "method": "POST",
-    "path": "^/api/login$",
-    "request": ".*admin.*",
-    "status": 200,
-    "headers": {
-      "Content-Type": "application/json"
-    },
-    "mock": "{\"token\": \"fake-admin-token\"}"
-  },
-  {
-    "method": "GET",
-    "path": "/health",
-    "status": 200,
-    "mock": "OK"
-  }
-]
-```
 
 #### Example `expectations.yaml`
 
@@ -96,8 +59,23 @@ Each expectation is an object with the following fields:
 SERVER_ADDR_HTTP=:8080 EXPECTATIONS_FILE=./internal/testdata/expectations.json go run cmd/main.go
 
 # Or with docker
-docker run -p 8081:8081 -e SERVER_ADDR_HTTP=":8081" -e EXPECTATIONS_FILE="/app/expectations.yaml" -v $(pwd)/internal/testdata/expectations.yaml:/app/expectations.yaml mock-server:latest
+docker run -p 8081:8081 -e SERVER_ADDR_HTTP=":8081" -e EXPECTATIONS_FILE="/app/expectations.yaml" -v $(pwd)/internal/testdata/expectations.yaml:/app/expectations.yaml docker pull andboson/mock-server:latest
 ```
+
+
+## Docker Compose
+
+You can easily run the mock server using Docker Compose. A `docker-compose.yaml` file is provided in the root directory.
+
+1.  Ensure you have Docker and Docker Compose installed.
+2.  (Optional) Edit `internal/testdata/expectations.yaml` or create your own expectations file and update the volume mapping in `docker-compose.yaml`.
+3.  Run the server:
+
+    ```bash
+    docker compose up
+    ```
+
+    The server will start on port `8081`.
 
 ## API
 
