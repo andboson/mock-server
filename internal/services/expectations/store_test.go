@@ -62,7 +62,7 @@ func TestStore_AddExpectation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := NewStore()
-			err := s.AddExpectation(tt.expectation)
+			err := s.AddExpectation(&tt.expectation)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
@@ -90,12 +90,12 @@ func TestStore_AddExpectation_FileLoading(t *testing.T) {
 		MockResponse: "@" + tmpFile,
 	}
 
-	err = s.AddExpectation(exp)
+	err = s.AddExpectation(&exp)
 	require.NoError(t, err)
 
 	exps := s.DumpAvailableExpectations()
 	require.Len(t, exps, 1)
-	require.Equal(t, fileContent, exps[0].MockResponse)
+	require.Equal(t, "@"+tmpFile, exps[0].MockResponse)
 }
 
 func TestStore_AddExpectations(t *testing.T) {
@@ -129,9 +129,9 @@ func TestStore_FindMatch(t *testing.T) {
 	exp2 := models.Expectation{Method: "POST", Path: "/api/b", MockResponse: "B"}
 	exp3 := models.Expectation{Method: "PUT", Path: "/api/c/\\d+", MockResponse: "C"}
 
-	require.NoError(t, s.AddExpectation(exp1))
-	require.NoError(t, s.AddExpectation(exp2))
-	require.NoError(t, s.AddExpectation(exp3))
+	require.NoError(t, s.AddExpectation(&exp1))
+	require.NoError(t, s.AddExpectation(&exp2))
+	require.NoError(t, s.AddExpectation(&exp3))
 
 	tests := []struct {
 		name      string
@@ -189,6 +189,32 @@ func TestStore_FindMatch(t *testing.T) {
 	}
 }
 
+func TestStore_RemoveExpectation(t *testing.T) {
+	s := NewStore()
+	exp := &models.Expectation{
+		Method: "GET",
+		Path:   "/test",
+	}
+	require.NoError(t, s.AddExpectation(exp))
+
+	// Get ID
+	storedExp, err := s.GetExpectation(exp.ID.String())
+	require.NoError(t, err)
+	require.NotNil(t, storedExp)
+
+	// Remove existing
+	err = s.RemoveExpectation(exp.ID.String())
+	require.NoError(t, err)
+
+	// Check it is gone
+	_, err = s.GetExpectation(exp.ID.String())
+	require.Error(t, err)
+
+	// Remove non-existent
+	err = s.RemoveExpectation("non-existent-id")
+	require.Error(t, err)
+}
+
 func TestStore_History(t *testing.T) {
 	s := NewStore()
 
@@ -214,7 +240,7 @@ func TestStore_History(t *testing.T) {
 func TestStore_Concurrency(t *testing.T) {
 	s := NewStore()
 	exp := models.Expectation{Method: "GET", Path: "/test"}
-	require.NoError(t, s.AddExpectation(exp))
+	require.NoError(t, s.AddExpectation(&exp))
 
 	done := make(chan bool)
 	go func() {

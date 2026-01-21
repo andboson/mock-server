@@ -68,7 +68,7 @@ func TestServer_Handler_ServeMocks(t *testing.T) {
 		StatusCode:   200,
 		MockResponse: "mocked response",
 	}
-	require.NoError(t, store.AddExpectation(exp))
+	require.NoError(t, store.AddExpectation(&exp))
 
 	srv := NewServer(":8080", tpls, store)
 

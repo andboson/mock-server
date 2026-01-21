@@ -1,0 +1,141 @@
+openapi: 3.0.0
+info:
+  title: Mock Server API
+  version: 1.0.0
+  description: API for managing mock expectations
+paths:
+  /api/expectation:
+    post:
+      summary: Add a new expectation
+      operationId: addExpectation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpectationCreate'
+      responses:
+        '201':
+          description: Expectation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpectationId'
+        '400':
+          description: Invalid request
+        '500':
+          description: Internal server error
+  /api/expectation/{id}:
+    get:
+      summary: Check if an expectation was matched
+      operationId: checkExpectation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Match status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchStatus'
+        '400':
+          description: Missing ID
+        '404':
+          description: Expectation not found
+    delete:
+      summary: Remove an expectation
+      operationId: removeExpectation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Expectation removed
+        '400':
+          description: Missing ID
+        '404':
+          description: Expectation not found
+  /api/expectations:
+    get:
+      summary: Get all expectations
+      operationId: getExpectations
+      responses:
+        '200':
+          description: List of expectations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Expectation'
+components:
+  schemas:
+    Expectation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        matched_count:
+          type: integer
+        method:
+          type: string
+        path:
+          type: string
+        request:
+          type: string
+        status:
+          type: integer
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        mock:
+          type: string
+    ExpectationCreate:
+      type: object
+      required:
+        - method
+        - path
+      properties:
+        method:
+          type: string
+          example: GET
+        path:
+          type: string
+          example: /api/test
+        request:
+          type: string
+          description: Regex for request body matching
+        status:
+          type: integer
+          default: 200
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        mock:
+          type: string
+          description: Response body or @filename
+    ExpectationId:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+    MatchStatus:
+      type: object
+      properties:
+        matched:
+          type: boolean
+        matched_count:
+          type: integer
