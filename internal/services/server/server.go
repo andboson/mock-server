@@ -43,8 +43,10 @@ func NewServer(addr string, tpls *templates.Templates, store *expectations.Store
 
 	mux.HandleFunc("POST /api/expectation", s.AddExpectationHandler)
 	mux.HandleFunc("GET /api/expectation/{id}", s.CheckExpectationHandler)
+	mux.HandleFunc("PUT /api/expectation/{id}", s.UpdateExpectationHandler)
 	mux.HandleFunc("DELETE /api/expectation/{id}", s.RemoveExpectationHandler)
 	mux.HandleFunc("GET /api/expectations", s.GetAllExpectationsHandler)
+	mux.HandleFunc("GET /expectations-ui", s.ExpectationsUIHandler)
 	mux.Handle("/", s.createHTTPHandler())
 
 	return s
@@ -57,7 +59,7 @@ func (s *Server) Start() error {
 		return fmt.Errorf("could not listen on %s: %w", s.address, err)
 	}
 
-	log.Printf("HTTP CLI LOGGER Server started: %s", s.address)
+	log.Printf("MOCK Server started: %s", s.address)
 
 	for _, exp := range s.store.DumpAvailableExpectations() {
 		log.Println(exp.String())
@@ -73,12 +75,23 @@ func (s *Server) Stop(ctx context.Context) error {
 	return s.server.Shutdown(ctx)
 }
 
+// ExpectationsUIHandler serves the expectations management UI
+func (s *Server) ExpectationsUIHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	exps := s.store.DumpAvailableExpectations()
+
+	if err := s.tpls.Tpls.ExecuteTemplate(w, "expectations.tmpl", exps); err != nil {
+		http.Error(w, fmt.Sprintf("Template error: %v", err), http.StatusInternalServerError)
+		return
+	}
+}
+
 func (s *Server) createHTTPHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// serve index page
 		if r.RequestURI == "/" && r.Method == http.MethodGet {
 			w.Header().Add("Content-Type", "text/html; charset=utf-8")
-			if err := s.tpls.Tpls.Execute(w, s.store.GetHistory(true)); err != nil {
+			if err := s.tpls.Tpls.ExecuteTemplate(w, "index.tmpl", s.store.GetHistory(true)); err != nil {
 				_, _ = fmt.Fprintf(w, "%+v", err)
 			}
 

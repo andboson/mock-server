@@ -41,11 +41,17 @@ func (hi *HistoryItem) PrintString() template.HTML {
 			"<pre>mock response:<code class=\"language-json\">%s</code></pre>",
 			hi.BodyMock,
 		)
-	} else {
+	} else if !hi.MockMatched {
 		fmt.Fprintf(
 			buff,
 			"<pre >mock response:<code class=\"language-json\">%s</code></pre>",
 			"request wasn't matched",
+		)
+	} else {
+		fmt.Fprintf(
+			buff,
+			"<pre >mock response:<code class=\"language-json\">%s</code></pre>",
+			"request was matched but mock response is empty",
 		)
 	}
 

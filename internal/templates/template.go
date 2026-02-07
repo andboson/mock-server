@@ -2,6 +2,7 @@ package templates
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 )
@@ -16,8 +17,23 @@ type Templates struct {
 
 // NewTemplates returns an instance of Templates
 func NewTemplates() (*Templates, error) {
-	path := "index.tmpl"
-	t, err := template.New(path).ParseFS(embedTpl, path)
+	funcMap := template.FuncMap{
+		"deref": func(s *string) string {
+			if s == nil {
+				return ""
+			}
+			return *s
+		},
+		"jsonMarshal": func(v interface{}) string {
+			b, err := json.MarshalIndent(v, "", "  ")
+			if err != nil {
+				return fmt.Sprintf("error: %v", err)
+			}
+			return string(b)
+		},
+	}
+
+	t, err := template.New("").Funcs(funcMap).ParseFS(embedTpl, "*.tmpl")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse templates: %w", err)
 	}
