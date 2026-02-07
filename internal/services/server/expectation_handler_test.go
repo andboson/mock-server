@@ -41,7 +41,7 @@ func TestServer_AddExpectationHandler(t *testing.T) {
 		// Verify expectation was added
 		storedExps := store.DumpAvailableExpectations()
 		require.Len(t, storedExps, 1)
-		require.Equal(t, "/new", storedExps[0].Path)
+		require.Equal(t, "/new", *storedExps[0].Path)
 		require.Equal(t, respBody["id"], storedExps[0].ID.String())
 	})
 

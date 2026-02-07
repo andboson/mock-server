@@ -4,11 +4,13 @@ A simple, configurable HTTP mock server written in Go. It enables you to define 
 
 ## Features
 
-- **Flexible Matching**: Match requests by HTTP Method, Path (Regex supported), and Body (Regex supported).
+- **Flexible Matching**: Match requests by HTTP Method, Path (Regex supported), and Body (Regex supported). For GET requests, query parameters are automatically encoded and matched against the request pattern.
 - **Custom Responses**: Define the Status Code, Headers, and Body for matched requests.
-- **Request History**: View a log of received requests, including timestamps, remote addresses, and matching status.
+- **Match Tracking**: Track how many times each expectation has been matched via the `matched_count` field.
+- **Request History**: View a log of received requests, including timestamps, remote addresses, matching status, and the mock response that was returned.
 - **Copy cURL**: Easily copy the cURL command for any received request from the history dashboard.
 - **Web Interface**: Simple dashboard to view history.
+- **Smart Content-Type**: Automatically uses the request's `Accept` header as `Content-Type` when no response headers are specified.
 - **Configurable**: Load expectations via JSON/YAML files or Environment Variables.
 - **REST API**: Manage and check expectations dynamically via a RESTful API.
 
@@ -26,11 +28,13 @@ The server is configured using Environment Variables:
 
 Each expectation is an object with the following fields:
 
-- `method`: HTTP Method (e.g., "POST", "GET"). Use `*` to match any method.
-- `path`: URL path to match. Supports Regex (e.g., `^/api/v1/user/\d+$`) or `*` to match any path.
+- `method`: HTTP Method (e.g., "POST", "GET"). Leave empty or omit to match any method.
+- `path`: URL path to match. Supports Regex (e.g., `^/api/v1/user/\d+$`). Use `*` or leave empty to match any path.
 - `request`: Regex to match against the request body. If empty or `*`, matches any body.
-- `status`: HTTP Status Code to return (e.g., 200, 404).
+  - For GET requests: Query parameters are automatically URL-encoded (e.g., `foo=bar&baz=qux`) and matched against this pattern. Parameter order is normalized for consistent matching.
+- `status`: HTTP Status Code to return (e.g., 200, 404). Defaults to 200 if not specified.
 - `headers`: Map of HTTP headers to include in the response.
+  - If the `headers` map is empty or omitted entirely, the server automatically uses the request's `Accept` header as the `Content-Type` in the response.
 - `mock`: The response body string. Can start with `@` to load from a file (e.g. `@/path/to/response.json`).
 
 #### Example `expectations.yaml`
@@ -50,6 +54,37 @@ Each expectation is an object with the following fields:
     Content-Type: application/json
   mock: "@/app/test_response.json"
 ```
+
+#### GET Requests and Query Parameters
+
+For GET requests, query parameters are automatically URL-encoded and matched against the `request` field. This allows you to match specific query parameter patterns:
+
+```yaml
+- method: GET
+  path: /api/search
+  request: "q=test&limit=10"
+  status: 200
+  headers:
+    Content-Type: application/json
+  mock: '{"results": []}'
+```
+
+The above expectation will match requests like:
+- `GET /api/search?q=test&limit=10`
+- `GET /api/search?limit=10&q=test` (parameter order is normalized)
+
+You can also use regex patterns for flexible matching:
+
+```yaml
+- method: GET
+  path: /api/users
+  request: "id=\\d+"
+  status: 200
+  mock: '{"user": "data"}'
+```
+
+This matches any GET request to `/api/users` with an `id` parameter containing digits.
+
   
 
 ## Running the Server
@@ -84,9 +119,9 @@ The server provides a REST API to manage expectations dynamically.
 ### Endpoints
 
 - `POST /api/expectation`: Add a new expectation.
-- `GET /api/expectation/{id}`: Check if an expectation was matched.
+- `GET /api/expectation/{id}`: Check if an expectation was matched. Returns `{"matched": boolean, "matched_count": integer}` indicating whether the expectation was ever matched and how many times.
 - `DELETE /api/expectation/{id}`: Remove an expectation.
-- `GET /api/expectations`: Get all registered expectations.
+- `GET /api/expectations`: Get all registered expectations (includes `matched_count` for each).
 
 ### OpenAPI Specification
 
@@ -139,7 +174,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to check status: %v", err)
 	}
-	fmt.Printf("Matched: %v\n", status.Matched)
+	fmt.Printf("Matched: %v, Match Count: %d\n", status.Matched, status.MatchedCount)
 }
 ```
 

@@ -18,7 +18,7 @@ type errReader struct {
 	err error
 }
 
-func (e *errReader) Read(p []byte) (n int, err error) {
+func (e *errReader) Read(_ []byte) (n int, err error) {
 	return 0, e.err
 }
 
@@ -26,9 +26,8 @@ func TestServer_ServeMocks(t *testing.T) {
 	t.Run("Match found", func(t *testing.T) {
 		store := expectations.NewStore()
 		exp := models.Expectation{
-			Method: "POST",
-			Path:   "/api/.*",
-			//	Request:    `\{"key":"value"\}`,
+			Method:     strPtr("POST"),
+			Path:       strPtr("/api/.*"),
 			StatusCode: http.StatusAccepted,
 			ResponseHeaders: map[string]string{
 				"X-Custom-Header": "found",
@@ -91,8 +90,8 @@ func TestServer_ServeMocks(t *testing.T) {
 	t.Run("Match found with default status code", func(t *testing.T) {
 		store := expectations.NewStore()
 		exp := models.Expectation{
-			Method:       "GET",
-			Path:         "/ping",
+			Method:       strPtr("GET"),
+			Path:         strPtr("/ping"),
 			MockResponse: "pong",
 			// StatusCode is 0 by default
 		}
@@ -103,6 +102,71 @@ func TestServer_ServeMocks(t *testing.T) {
 		}
 
 		req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+		w := httptest.NewRecorder()
+
+		srv.ServeMocks(w, req)
+
+		resp := w.Result()
+		defer func() { _ = resp.Body.Close() }()
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		respBody, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.Equal(t, "pong", string(respBody))
+	})
+
+	t.Run("Match query no check", func(t *testing.T) {
+		store := expectations.NewStore()
+		exp := models.Expectation{
+			Method:       strPtr("GET"),
+			Path:         strPtr("/v2.0/agent(postman)/list"),
+			MockResponse: "pong",
+		}
+		require.NoError(t, store.AddExpectation(&exp))
+
+		srv := &Server{
+			store: store,
+		}
+
+		req, _ := http.NewRequest(http.MethodGet, "/v2.0/agent(postman)/list", nil)
+		q := req.URL.Query()
+		q.Add("filter", "itemNo eq '1234'")
+		req.URL.RawQuery = q.Encode()
+
+		w := httptest.NewRecorder()
+
+		srv.ServeMocks(w, req)
+
+		resp := w.Result()
+		defer func() { _ = resp.Body.Close() }()
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		respBody, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.Equal(t, "pong", string(respBody))
+	})
+
+	t.Run("Match query check", func(t *testing.T) {
+		store := expectations.NewStore()
+		exp := models.Expectation{
+			Method:       strPtr("GET"),
+			Path:         strPtr("/v2.0/agent(postman)/list"),
+			Request:      strPtr("filter=itemNo+eq+%271234%27"),
+			MockResponse: "pong",
+		}
+		require.NoError(t, store.AddExpectation(&exp))
+
+		srv := &Server{
+			store: store,
+		}
+
+		req, _ := http.NewRequest(http.MethodGet, "/v2.0/agent(postman)/list", nil)
+		q := req.URL.Query()
+		q.Add("filter", "itemNo eq '1234'")
+		req.URL.RawQuery = q.Encode()
+
 		w := httptest.NewRecorder()
 
 		srv.ServeMocks(w, req)

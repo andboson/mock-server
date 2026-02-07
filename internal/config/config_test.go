@@ -22,8 +22,10 @@ func TestParseExpectations(t *testing.T) {
 	err := c.ParseExpectations([]byte(jsonData))
 	require.NoError(t, err)
 	require.Len(t, c.Expectations(), 1)
-	require.Equal(t, "GET", c.Expectations()[0].Method)
-	require.Equal(t, "/test", c.Expectations()[0].Path)
+	require.NotNil(t, c.Expectations()[0].Method)
+	require.Equal(t, "GET", *c.Expectations()[0].Method)
+	require.NotNil(t, c.Expectations()[0].Path)
+	require.Equal(t, "/test", *c.Expectations()[0].Path)
 }
 
 func TestLoadExpectationsFromFile(t *testing.T) {
@@ -39,7 +41,8 @@ func TestLoadExpectationsFromFile(t *testing.T) {
 	err = c.LoadExpectationsFromFile(jsonFile)
 	require.NoError(t, err)
 	require.Len(t, c.Expectations(), 1)
-	require.Equal(t, "/json", c.Expectations()[0].Path)
+	require.NotNil(t, c.Expectations()[0].Path)
+	require.Equal(t, "/json", *c.Expectations()[0].Path)
 
 	// YAML File
 	yamlFile := filepath.Join(tempDir, "expectations.yaml")
@@ -53,7 +56,8 @@ func TestLoadExpectationsFromFile(t *testing.T) {
 	err = c.LoadExpectationsFromFile(yamlFile) // Append
 	require.NoError(t, err)
 	require.Len(t, c.Expectations(), 2)
-	require.Equal(t, "/yaml", c.Expectations()[1].Path)
+	require.NotNil(t, c.Expectations()[1].Path)
+	require.Equal(t, "/yaml", *c.Expectations()[1].Path)
 }
 
 func TestNewConfig_Env(t *testing.T) {
@@ -65,7 +69,8 @@ func TestNewConfig_Env(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, c)
 	require.Len(t, c.Expectations(), 1)
-	require.Equal(t, "/env", c.Expectations()[0].Path)
+	require.NotNil(t, c.Expectations()[0].Path)
+	require.Equal(t, "/env", *c.Expectations()[0].Path)
 }
 
 func TestNewConfig_EnvFile(t *testing.T) {
@@ -81,7 +86,8 @@ func TestNewConfig_EnvFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, c)
 	require.Len(t, c.Expectations(), 1)
-	require.Equal(t, "/envfile", c.Expectations()[0].Path)
+	require.NotNil(t, c.Expectations()[0].Path)
+	require.Equal(t, "/envfile", *c.Expectations()[0].Path)
 }
 
 func TestLoadExpectationsFromTestData(t *testing.T) {
@@ -92,8 +98,10 @@ func TestLoadExpectationsFromTestData(t *testing.T) {
 		require.Len(t, c.Expectations(), 6)
 
 		e := c.Expectations()[0]
-		require.Equal(t, "GET", e.Method)
-		require.Equal(t, "/api/hello", e.Path)
+		require.NotNil(t, e.Method)
+		require.Equal(t, "GET", *e.Method)
+		require.NotNil(t, e.Path)
+		require.Equal(t, "/api/hello", *e.Path)
 		require.Equal(t, 200, e.StatusCode)
 	})
 
@@ -104,8 +112,10 @@ func TestLoadExpectationsFromTestData(t *testing.T) {
 		require.Len(t, c.Expectations(), 6)
 
 		e := c.Expectations()[0]
-		require.Equal(t, "GET", e.Method)
-		require.Equal(t, "/api/hello", e.Path)
+		require.NotNil(t, e.Method)
+		require.Equal(t, "GET", *e.Method)
+		require.NotNil(t, e.Path)
+		require.Equal(t, "/api/hello", *e.Path)
 		require.Equal(t, 200, e.StatusCode)
 	})
 }

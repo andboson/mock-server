@@ -2,6 +2,8 @@ package models
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -15,9 +17,9 @@ type Expectation struct {
 	MatchedCount int       `json:"matched_count"`
 
 	// Request matching criteria
-	Method  string `json:"method" yaml:"method"`
-	Path    string `json:"path" yaml:"path"`
-	Request string `json:"request" yaml:"request"`
+	Method  *string `json:"method,omitempty" yaml:"method,omitempty"`
+	Path    *string `json:"path,omitempty" yaml:"path,omitempty"`
+	Request *string `json:"request,omitempty" yaml:"request,omitempty"`
 
 	// Response details
 	StatusCode      int               `json:"status" yaml:"status"`
@@ -32,7 +34,22 @@ type Expectation struct {
 }
 
 func (e *Expectation) String() string {
-	return fmt.Sprintf("Expectation(Method=%s, Path=%s, Request=%s, StatusCode=%d)", e.Method, e.Path, e.Request, e.StatusCode)
+	method := "*"
+	if e.Method != nil {
+		method = *e.Method
+	}
+
+	path := "*"
+	if e.Path != nil {
+		path = *e.Path
+	}
+
+	request := "*"
+	if e.Request != nil {
+		request = *e.Request
+	}
+
+	return fmt.Sprintf("Expectation(Method=%s, Path=%s, Request=%s, StatusCode=%d)", method, path, request, e.StatusCode)
 }
 
 func (e *Expectation) IncrementMatchedCount() {
@@ -62,8 +79,8 @@ func (e *Expectation) CheckMockResponse() error {
 // Compile prepares the regular expressions for the Path and Request fields.
 // It should be called after loading the Expectation and before using Match.
 func (e *Expectation) Compile() error {
-	if e.Path != "" && e.Path != "*" {
-		reg, err := regexp.Compile(e.Path)
+	if e.Path != nil && *e.Path != "" && *e.Path != "*" {
+		reg, err := regexp.Compile(*e.Path)
 		if err != nil {
 			return fmt.Errorf("compiling path regex: %w", err)
 		}
@@ -71,8 +88,8 @@ func (e *Expectation) Compile() error {
 		e.pathRegex = reg
 	}
 
-	if e.Request != "" && e.Request != "*" {
-		reg, err := regexp.Compile(e.Request)
+	if e.Request != nil && *e.Request != "" && *e.Request != "*" {
+		reg, err := regexp.Compile(*e.Request)
 		if err != nil {
 			return fmt.Errorf("compiling request regex: %w", err)
 		}
@@ -93,11 +110,7 @@ func (e *Expectation) Match(method, path, body string) bool {
 		return false
 	}
 
-	if e.Method != "POST" && e.Method != "PATCH" && e.Method != "PUT" {
-		return true
-	}
-
-	if e.Request != "" && !e.matchRequestBody(body) {
+	if e.Request != nil && !e.matchRequestBody(method, body) {
 		return false
 	}
 
@@ -105,15 +118,11 @@ func (e *Expectation) Match(method, path, body string) bool {
 }
 
 func (e *Expectation) matchPath(path string) bool {
-	if e.Path == "*" {
+	if e.Path == nil || *e.Path == "" || *e.Path == "*" {
 		return true
 	}
 
-	if path == "" && e.Path != "" {
-		return false
-	}
-
-	if e.Path == path {
+	if *e.Path == path {
 		return true
 	}
 
@@ -124,17 +133,34 @@ func (e *Expectation) matchPath(path string) bool {
 	return false
 }
 
-func (e *Expectation) matchRequestBody(body string) bool {
-	if e.Request == "*" || e.Method == "GET" {
+func (e *Expectation) matchRequestBody(method, body string) bool {
+	if e.Request == nil || *e.Request == "" || *e.Request == "*" {
 		return true
 	}
 
-	if body == "" && e.Request != "" {
+	if body == "" && *e.Request != "" {
 		return false
 	}
 
-	if e.Request == body {
+	if *e.Request == body {
 		return true
+	}
+
+	// For GET requests, we can treat the body as a query string and compare key-value pairs regardless of order
+	if method == http.MethodGet {
+		reqQuery, err := url.ParseQuery(body)
+		if err != nil {
+			return false
+		}
+
+		expectedQuery, err := url.ParseQuery(*e.Request)
+		if err != nil {
+			return false
+		}
+
+		if compareQueries(reqQuery, expectedQuery) {
+			return true
+		}
 	}
 
 	if e.requestRegex != nil && e.requestRegex.MatchString(body) {
@@ -144,10 +170,33 @@ func (e *Expectation) matchRequestBody(body string) bool {
 	return false
 }
 
+func compareQueries(query url.Values, query2 url.Values) bool {
+	if len(query) != len(query2) {
+		return false
+	}
+
+	for key, values := range query {
+		values2, ok := query2[key]
+		if !ok {
+			return false
+		}
+
+		if len(values) != len(values2) {
+			return false
+		}
+
+		if strings.Join(values, "") != strings.Join(values2, "") {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (e *Expectation) matchMethod(method string) bool {
-	if e.Method == "*" || method == "" {
+	if e.Method == nil || *e.Method == "" || *e.Method == "*" {
 		return true
 	}
 
-	return strings.EqualFold(e.Method, method)
+	return strings.EqualFold(*e.Method, method)
 }
