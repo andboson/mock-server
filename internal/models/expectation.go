@@ -2,7 +2,6 @@ package models
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -135,7 +134,7 @@ func (e *Expectation) matchPath(path string) bool {
 }
 
 func (e *Expectation) matchRequestBody(method, body string) bool {
-	if e.Request == nil || *e.Request == "" {
+	if e.Request == nil || *e.Request == "" || *e.Request == "*" {
 		return true
 	}
 
@@ -151,15 +150,11 @@ func (e *Expectation) matchRequestBody(method, body string) bool {
 	if method == http.MethodGet {
 		reqQuery, err := url.ParseQuery(body)
 		if err != nil {
-			log.Println("failed to parse request query:", err)
-
 			return false
 		}
 
 		expectedQuery, err := url.ParseQuery(*e.Request)
 		if err != nil {
-			log.Println("failed to parse expectation query:", err)
-
 			return false
 		}
 
@@ -199,7 +194,7 @@ func compareQueries(query url.Values, query2 url.Values) bool {
 }
 
 func (e *Expectation) matchMethod(method string) bool {
-	if e.Method == nil || *e.Method == "" {
+	if e.Method == nil || *e.Method == "" || *e.Method == "*" {
 		return true
 	}
 

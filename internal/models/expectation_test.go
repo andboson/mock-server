@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -62,6 +63,22 @@ func TestExpectation_Compile(t *testing.T) {
 			expectation: &Expectation{
 				Path:    strPtr(""),
 				Request: strPtr(""),
+			},
+			wantErr: false,
+		},
+		{
+			name: "nil fields",
+			expectation: &Expectation{
+				Path:    nil,
+				Request: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "asterisk wildcards",
+			expectation: &Expectation{
+				Path:    strPtr("*"),
+				Request: strPtr("*"),
 			},
 			wantErr: false,
 		},
@@ -376,14 +393,59 @@ func TestExpectation_Match(t *testing.T) {
 }
 
 func TestExpectation_String(t *testing.T) {
-	e := Expectation{
-		Method:     strPtr("GET"),
-		Path:       strPtr("/api/test"),
-		Request:    nil,
-		StatusCode: 200,
+	tests := []struct {
+		name        string
+		expectation Expectation
+		expected    string
+	}{
+		{
+			name: "all fields set",
+			expectation: Expectation{
+				Method:     strPtr("GET"),
+				Path:       strPtr("/api/test"),
+				Request:    strPtr(`{"id":1}`),
+				StatusCode: 200,
+			},
+			expected: `Expectation(Method=GET, Path=/api/test, Request={"id":1}, StatusCode=200)`,
+		},
+		{
+			name: "nil Request field",
+			expectation: Expectation{
+				Method:     strPtr("GET"),
+				Path:       strPtr("/api/test"),
+				Request:    nil,
+				StatusCode: 200,
+			},
+			expected: "Expectation(Method=GET, Path=/api/test, Request=*, StatusCode=200)",
+		},
+		{
+			name: "all nil fields",
+			expectation: Expectation{
+				Method:     nil,
+				Path:       nil,
+				Request:    nil,
+				StatusCode: 404,
+			},
+			expected: "Expectation(Method=*, Path=*, Request=*, StatusCode=404)",
+		},
+		{
+			name: "empty string fields",
+			expectation: Expectation{
+				Method:     strPtr(""),
+				Path:       strPtr(""),
+				Request:    strPtr(""),
+				StatusCode: 201,
+			},
+			expected: "Expectation(Method=, Path=, Request=, StatusCode=201)",
+		},
 	}
-	expected := "Expectation(Method=GET, Path=/api/test, Request=*, StatusCode=200)"
-	require.Equal(t, expected, e.String())
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.expectation.String()
+			require.Equal(t, tt.expected, result)
+		})
+	}
 }
 
 func TestExpectation_CheckMockResponse(t *testing.T) {
@@ -407,12 +469,14 @@ func TestExpectation_CheckMockResponse(t *testing.T) {
 		err = tmpfile.Close()
 		require.NoError(t, err)
 
+		originalPath := "@" + tmpfile.Name()
 		e := &Expectation{
-			MockResponse: "@" + tmpfile.Name(),
+			MockResponse: originalPath,
 		}
 		err = e.CheckMockResponse()
 		require.NoError(t, err)
 		require.Equal(t, content, e.MockResponse)
+		require.Equal(t, originalPath, e.FileSourceOriginal)
 	})
 
 	t.Run("non-existent file", func(t *testing.T) {
@@ -423,4 +487,33 @@ func TestExpectation_CheckMockResponse(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "reading mock response file")
 	})
+}
+
+func TestExpectation_CreateID(t *testing.T) {
+	e := &Expectation{}
+	require.Equal(t, uuid.Nil, e.ID)
+
+	e.CreateID()
+	require.NotEqual(t, uuid.Nil, e.ID)
+
+	// Create another ID and verify it's different
+	firstID := e.ID
+	e.CreateID()
+	require.NotEqual(t, firstID, e.ID)
+}
+
+func TestExpectation_IncrementMatchedCount(t *testing.T) {
+	e := &Expectation{}
+	require.Equal(t, 0, e.MatchedCount)
+
+	e.IncrementMatchedCount()
+	require.Equal(t, 1, e.MatchedCount)
+
+	e.IncrementMatchedCount()
+	require.Equal(t, 2, e.MatchedCount)
+
+	// Verify it works with initial count
+	e2 := &Expectation{MatchedCount: 10}
+	e2.IncrementMatchedCount()
+	require.Equal(t, 11, e2.MatchedCount)
 }

@@ -11,6 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Helper function to create string pointer
+func strPtr(s string) *string {
+	return &s
+}
+
 func TestNewStore(t *testing.T) {
 	s := NewStore()
 	require.NotNil(t, s)
@@ -27,32 +32,32 @@ func TestStore_AddExpectation(t *testing.T) {
 		{
 			name: "Valid simple expectation",
 			expectation: models.Expectation{
-				Method: "GET",
-				Path:   "/api/test",
+				Method: strPtr("GET"),
+				Path:   strPtr("/api/test"),
 			},
 			wantErr: false,
 		},
 		{
 			name: "Valid regex expectation",
 			expectation: models.Expectation{
-				Method: "POST",
-				Path:   "/api/users/\\d+",
+				Method: strPtr("POST"),
+				Path:   strPtr("/api/users/\\d+"),
 			},
 			wantErr: false,
 		},
 		{
 			name: "Invalid path regex",
 			expectation: models.Expectation{
-				Method: "GET",
-				Path:   "/api/[",
+				Method: strPtr("GET"),
+				Path:   strPtr("/api/["),
 			},
 			wantErr: true,
 		},
 		{
 			name: "Invalid mock response file",
 			expectation: models.Expectation{
-				Method:       "GET",
-				Path:         "/api/file",
+				Method:       strPtr("GET"),
+				Path:         strPtr("/api/file"),
 				MockResponse: "@nonexistent_file.json",
 			},
 			wantErr: true,
@@ -85,8 +90,8 @@ func TestStore_AddExpectation_FileLoading(t *testing.T) {
 
 	s := NewStore()
 	exp := models.Expectation{
-		Method:       "GET",
-		Path:         "/api/file",
+		Method:       strPtr("GET"),
+		Path:         strPtr("/api/file"),
 		MockResponse: "@" + tmpFile,
 	}
 
@@ -101,8 +106,8 @@ func TestStore_AddExpectation_FileLoading(t *testing.T) {
 func TestStore_AddExpectations(t *testing.T) {
 	s := NewStore()
 	expectations := []models.Expectation{
-		{Method: "GET", Path: "/a"},
-		{Method: "POST", Path: "/b"},
+		{Method: strPtr("GET"), Path: strPtr("/a")},
+		{Method: strPtr("POST"), Path: strPtr("/b")},
 	}
 
 	err := s.AddExpectations(expectations)
@@ -115,8 +120,8 @@ func TestStore_AddExpectations(t *testing.T) {
 func TestStore_AddExpectations_Error(t *testing.T) {
 	s := NewStore()
 	expectations := []models.Expectation{
-		{Method: "GET", Path: "/a"},
-		{Method: "POST", Path: "["}, // Invalid regex
+		{Method: strPtr("GET"), Path: strPtr("/a")},
+		{Method: strPtr("POST"), Path: strPtr("[")}, // Invalid regex
 	}
 
 	err := s.AddExpectations(expectations)
@@ -125,9 +130,9 @@ func TestStore_AddExpectations_Error(t *testing.T) {
 
 func TestStore_FindMatch(t *testing.T) {
 	s := NewStore()
-	exp1 := models.Expectation{Method: "GET", Path: "/api/a", MockResponse: "A"}
-	exp2 := models.Expectation{Method: "POST", Path: "/api/b", MockResponse: "B"}
-	exp3 := models.Expectation{Method: "PUT", Path: "/api/c/\\d+", MockResponse: "C"}
+	exp1 := models.Expectation{Method: strPtr("GET"), Path: strPtr("/api/a"), MockResponse: "A"}
+	exp2 := models.Expectation{Method: strPtr("POST"), Path: strPtr("/api/b"), MockResponse: "B"}
+	exp3 := models.Expectation{Method: strPtr("PUT"), Path: strPtr("/api/c/\\d+"), MockResponse: "C"}
 
 	require.NoError(t, s.AddExpectation(&exp1))
 	require.NoError(t, s.AddExpectation(&exp2))
@@ -192,8 +197,8 @@ func TestStore_FindMatch(t *testing.T) {
 func TestStore_RemoveExpectation(t *testing.T) {
 	s := NewStore()
 	exp := &models.Expectation{
-		Method: "GET",
-		Path:   "/test",
+		Method: strPtr("GET"),
+		Path:   strPtr("/test"),
 	}
 	require.NoError(t, s.AddExpectation(exp))
 
@@ -239,7 +244,7 @@ func TestStore_History(t *testing.T) {
 
 func TestStore_Concurrency(t *testing.T) {
 	s := NewStore()
-	exp := models.Expectation{Method: "GET", Path: "/test"}
+	exp := models.Expectation{Method: strPtr("GET"), Path: strPtr("/test")}
 	require.NoError(t, s.AddExpectation(&exp))
 
 	done := make(chan bool)
