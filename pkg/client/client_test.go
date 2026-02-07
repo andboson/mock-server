@@ -39,6 +39,34 @@ func Test_Client_CreateExpectation_Success(t *testing.T) {
 	assert.Equal(t, expectedID, resp.ID)
 }
 
+func Test_Client_UpdateExpectation_Success(t *testing.T) {
+	expectedID := "12345"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPut, r.Method)
+		assert.Equal(t, "/api/expectation/12345", r.URL.Path)
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+		var req ExpectationCreate
+		err := json.NewDecoder(r.Body).Decode(&req)
+		require.NoError(t, err)
+		assert.Equal(t, "POST", req.Method)
+
+		w.WriteHeader(http.StatusOK)
+		err = json.NewEncoder(w).Encode(ExpectationID{ID: expectedID})
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	client := New(server.URL, nil)
+	resp, err := client.UpdateExpectation(context.Background(), expectedID, ExpectationCreate{
+		Method: "POST",
+		Path:   "/updated",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, expectedID, resp.ID)
+}
+
 func Test_Client_CheckExpectation_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodGet, r.Method)
