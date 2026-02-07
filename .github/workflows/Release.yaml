@@ -1,7 +1,5 @@
 name: Release
 on:
-  push:
-    branches: ['main']
   release:
     types:
       - prereleased
@@ -59,6 +57,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: andboson/mock-server
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}.{{patch}}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
