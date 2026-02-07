@@ -42,6 +42,16 @@ func (c *Client) CreateExpectation(ctx context.Context, exp ExpectationCreate) (
 	return &resp, nil
 }
 
+// UpdateExpectation updates an existing expectation.
+func (c *Client) UpdateExpectation(ctx context.Context, id string, exp ExpectationCreate) (*ExpectationID, error) {
+	var resp ExpectationID
+	err := c.do(ctx, http.MethodPut, fmt.Sprintf("/api/expectation/%s", id), exp, &resp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update expectation: %w", err)
+	}
+	return &resp, nil
+}
+
 // CheckExpectation checks if an expectation was matched.
 func (c *Client) CheckExpectation(ctx context.Context, id string) (*MatchStatus, error) {
 	var resp MatchStatus
