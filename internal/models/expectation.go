@@ -13,8 +13,8 @@ import (
 
 // Expectation represents a mock rule containing request matching criteria and the expected response.
 type Expectation struct {
-	ID           uuid.UUID `json:"id" yaml:"-"`
-	MatchedCount int       `json:"matched_count"`
+	ID           uuid.UUID `json:"-" yaml:"-"`
+	MatchedCount int       `json:"-" yaml:"-"`
 
 	// Request matching criteria
 	Method  *string `json:"method,omitempty" yaml:"method,omitempty"`

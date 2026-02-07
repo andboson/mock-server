@@ -16,48 +16,160 @@
       display: none;
     }
     th.req {
-      width: 65%;
+      width: 60%;
+    }
+    #flashMessages {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        max-width: 500px;
+    }
+    .flash-message {
+        margin-bottom: 10px;
+        animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: bold;
+        border-radius: 3px;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .status-matched {
+        background-color: #5cb85c;
+        color: white;
+    }
+    .status-unmatched {
+        background-color: #d9534f;
+        color: white;
     }
     </style>
 </head>
 <body>
 
+<div id="flashMessages"></div>
+
 <div class="container">
     <h2>MOCK SERVER</h2>
-    <p>The list of received requests:</p>
-    <table class="table table-hover">
-        <thead>
-        <tr>
-            <th>#</th>
-            <th>Date</th>
-            <th>cURL</th>
-            <th>RemoteAddr</th>
-            <th class="req">Request</th>
-        </tr>
-        </thead>
-        <tbody>
-        {{ range $i, $d := . }}
-        <tr>
-            <td>{{ $i }}</td>
-            <td>{{ .Date.Format "02-01-2006 15:04:05 MST" }}</td>
-            <td>
-            <input type="text" class="curl" value="{{ .CurlCommand }}" id="curlCmd{{$i}}">
-                        <button class="curlCopy" onclick="myFunction({{$i}})" title="Copy Curl command to clipboard">
-                          curl
-                          </button>
-            </td>
-            <td>{{ .RemoteAddr }}</td>
-            <td>
-                {{ .PrintString }}
-            </td>
-        </tr>
-        {{ end }}
-        </tbody>
-    </table>
+
+    <ul class="nav nav-tabs">
+        <li class="active"><a data-toggle="tab" href="#history">Request History</a></li>
+        <li><a data-toggle="tab" href="#expectations">Expectations</a></li>
+    </ul>
+
+    <div class="tab-content">
+        <div id="history" class="tab-pane fade in active">
+            <br>
+            <p>The list of received requests:</p>
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>cURL</th>
+                    <th>RemoteAddr</th>
+                    <th class="req">Request</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range $i, $d := . }}
+                <tr>
+                    <td>{{ $i }}</td>
+                    <td>{{ .Date.Format "02-01-2006 15:04:05 MST" }}</td>
+                    <td>
+                        {{ if .MockMatched }}
+                        <span class="status-badge status-matched">
+                            <span class="glyphicon glyphicon-ok"></span> Matched
+                        </span>
+                        {{ else }}
+                        <span class="status-badge status-unmatched">
+                            <span class="glyphicon glyphicon-remove"></span> Unmatched
+                        </span>
+                        {{ end }}
+                    </td>
+                    <td>
+                    <input type="text" class="curl" value="{{ .CurlCommand }}" id="curlCmd{{$i}}">
+                                <button class="curlCopy" onclick="myFunction({{$i}})" title="Copy Curl command to clipboard">
+                                  curl
+                                  </button>
+                    </td>
+                    <td>{{ .RemoteAddr }}</td>
+                    <td>
+                        {{ .PrintString }}
+                    </td>
+                </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="expectations" class="tab-pane fade">
+            <div id="expectationsContent">
+                <p>Loading expectations...</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 
 <script>
+// Global flash message function
+function showFlash(message, type) {
+    type = type || 'info';
+    var alertClass = 'alert-' + type;
+    var iconClass = '';
+
+    switch(type) {
+        case 'success':
+            iconClass = 'glyphicon-ok-sign';
+            break;
+        case 'danger':
+        case 'error':
+            iconClass = 'glyphicon-exclamation-sign';
+            alertClass = 'alert-danger';
+            break;
+        case 'warning':
+            iconClass = 'glyphicon-warning-sign';
+            break;
+        default:
+            iconClass = 'glyphicon-info-sign';
+    }
+
+    var flashHtml =
+        '<div class="alert ' + alertClass + ' alert-dismissible flash-message" role="alert">' +
+            '<button type="button" class="close" data-dismiss="alert" aria-label="Close">' +
+                '<span aria-hidden="true">&times;</span>' +
+            '</button>' +
+            '<span class="glyphicon ' + iconClass + '"></span> ' +
+            '<strong>' + message + '</strong>' +
+        '</div>';
+
+    var $flash = $(flashHtml);
+    $('#flashMessages').append($flash);
+
+    // Auto-dismiss after 4 seconds
+    setTimeout(function() {
+        $flash.fadeOut(300, function() {
+            $(this).remove();
+        });
+    }, 4000);
+}
+
 function myFunction(id) {
   var copyText = document.getElementById("curlCmd"+id);
   copyText.select();
@@ -68,6 +180,18 @@ function myFunction(id) {
   tooltip.innerHTML = "Copied!"
 }
 
+// Load expectations tab content when clicked
+$('a[href="#expectations"]').on('shown.bs.tab', function (e) {
+    loadExpectations();
+});
+
+function loadExpectations() {
+    $.get('/expectations-ui', function(data) {
+        $('#expectationsContent').html(data);
+    }).fail(function() {
+        $('#expectationsContent').html('<p class="text-danger">Failed to load expectations</p>');
+    });
+}
 </script>
 </body>
 </html>

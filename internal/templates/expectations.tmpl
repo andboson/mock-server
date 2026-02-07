@@ -1,0 +1,444 @@
+<style>
+    .expectation-card {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background-color: #f9f9f9;
+    }
+    .expectation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .expectation-badge {
+        font-size: 12px;
+        padding: 3px 8px;
+        border-radius: 3px;
+        background-color: #5bc0de;
+        color: white;
+    }
+    .btn-edit, .btn-delete {
+        margin-left: 5px;
+    }
+    .add-expectation-form {
+        background-color: #f5f5f5;
+        padding: 20px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    .form-section {
+        margin-bottom: 15px;
+    }
+    .json-display {
+        background-color: #272822;
+        color: #f8f8f2;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+</style>
+
+
+<br>
+<div>
+    <div style="margin-bottom: 20px;">
+        <button id="addExpectationBtn" class="btn btn-success">
+            <span class="glyphicon glyphicon-plus"></span> Add New Expectation
+        </button>
+        <div class="btn-group" style="margin-left: 10px;">
+            <button id="exportJsonBtn" class="btn btn-info">
+                <span class="glyphicon glyphicon-download-alt"></span> Export JSON
+            </button>
+            <button id="exportYamlBtn" class="btn btn-info">
+                <span class="glyphicon glyphicon-download-alt"></span> Export YAML
+            </button>
+        </div>
+    </div>
+
+    <div id="addExpectationForm" class="add-expectation-form" style="display: none;">
+        <h4 id="formTitle">Add New Expectation</h4>
+        <form id="expectationForm">
+            <input type="hidden" id="expectationId" value="">
+            <div class="form-section">
+                <label>Request Matching Criteria</label>
+                <div class="form-group">
+                    <label for="method">Method (optional)</label>
+                    <select class="form-control" id="method" name="method">
+                        <option value="">Any</option>
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="PATCH">PATCH</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="path">Path Pattern (regex, optional)</label>
+                    <input type="text" class="form-control" id="path" name="path" placeholder="e.g., /api/users/.*">
+                </div>
+                <div class="form-group">
+                    <label for="request">Request Body Pattern (regex, optional), or encoded Query if we checking GET</label>
+                    <textarea class="form-control" id="request" name="request" rows="2" placeholder="e.g., .*username.*"></textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label>Response Configuration</label>
+                <div class="form-group">
+                    <label for="status">Status Code *</label>
+                    <input type="number" class="form-control" id="status" name="status" value="200" required>
+                </div>
+                <div class="form-group">
+                    <label for="headers">Response Headers (JSON format, optional)</label>
+                    <textarea class="form-control" id="headers" name="headers" rows="2" placeholder='{"Content-Type": "application/json"}'>{}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="mock">Response Body (optional)</label>
+                    <textarea class="form-control" id="mock" name="mock" rows="5" placeholder='{"message": "success"}'></textarea>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="submitBtn">Save Expectation</button>
+            <button type="button" class="btn btn-default" id="cancelAddBtn">Cancel</button>
+        </form>
+    </div>
+
+    <h4>Current Expectations</h4>
+    <div id="expectationsList">
+        {{ if . }}
+            {{ range $i, $exp := . }}
+            <div class="expectation-card" data-id="{{ $exp.ID }}">
+                <div class="expectation-header">
+                    <div>
+                        <strong>Expectation #{{ $i }}</strong>
+                        <span class="expectation-badge">Matched: {{ $exp.MatchedCount }} times</span>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-info btn-edit" data-id="{{ $exp.ID }}">
+                            <span class="glyphicon glyphicon-pencil"></span> Edit
+                        </button>
+                        <button class="btn btn-sm btn-danger btn-delete" data-id="{{ $exp.ID }}">
+                            <span class="glyphicon glyphicon-trash"></span> Delete
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <p><strong>ID:</strong> <code>{{ $exp.ID }}</code></p>
+                    {{ if $exp.Method }}
+                    <p><strong>Method:</strong> {{ deref $exp.Method }}</p>
+                    {{ end }}
+                    {{ if $exp.Path }}
+                    <p><strong>Path Pattern:</strong> <code>{{ deref $exp.Path }}</code></p>
+                    {{ end }}
+                    {{ if $exp.Request }}
+                    <p><strong>Request Pattern:</strong> <code>{{ deref $exp.Request }}</code></p>
+                    {{ end }}
+                    <p><strong>Status Code:</strong> {{ $exp.StatusCode }}</p>
+                    {{ if $exp.ResponseHeaders }}
+                    <p><strong>Headers:</strong></p>
+                    <div class="json-display">{{ jsonMarshal $exp.ResponseHeaders }}</div>
+                    {{ end }}
+                    <p><strong>Response Body:</strong></p>
+                    <div class="json-display">{{ $exp.MockResponse }}</div>
+                </div>
+            </div>
+            {{ end }}
+        {{ else }}
+            <p class="text-muted">No expectations configured yet.</p>
+        {{ end }}
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Use the global showFlash and loadExpectations functions
+    var showFlash = window.showFlash;
+    var loadExpectations = window.loadExpectations;
+
+    // Show/hide add expectation form
+    $('#addExpectationBtn').click(function() {
+        resetForm();
+        $('#formTitle').text('Add New Expectation');
+        $('#submitBtn').text('Save Expectation');
+        $('#expectationId').val('');
+        $('#addExpectationForm').slideDown();
+        $(this).hide();
+    });
+
+    $('#cancelAddBtn').click(function() {
+        $('#addExpectationForm').slideUp();
+        $('#addExpectationBtn').show();
+        resetForm();
+    });
+
+    // Export expectations as JSON
+    $('#exportJsonBtn').click(function() {
+        exportExpectations('json');
+    });
+
+    // Export expectations as YAML
+    $('#exportYamlBtn').click(function() {
+        exportExpectations('yaml');
+    });
+
+    function exportExpectations(format) {
+        $.get('/api/expectations', function(expectations) {
+            if (!expectations || expectations.length === 0) {
+                showFlash('No expectations to export', 'warning');
+                return;
+            }
+
+            var content, filename, mimeType;
+
+            if (format === 'json') {
+                content = JSON.stringify(expectations, null, 2);
+                filename = 'expectations_' + getTimestamp() + '.json';
+                mimeType = 'application/json';
+            } else if (format === 'yaml') {
+                content = convertToYAML(expectations);
+                filename = 'expectations_' + getTimestamp() + '.yaml';
+                mimeType = 'text/yaml';
+            }
+
+            downloadFile(content, filename, mimeType);
+            showFlash('Expectations exported successfully as ' + format.toUpperCase(), 'success');
+        }).fail(function() {
+            showFlash('Failed to fetch expectations for export', 'error');
+        });
+    }
+
+    function convertToYAML(data) {
+        var yaml = '';
+        for (var i = 0; i < data.length; i++) {
+            var exp = data[i];
+            yaml += '- ';
+            if (exp.method) {
+                yaml += 'method: ' + exp.method + '\n  ';
+            }
+            if (exp.path) {
+                yaml += 'path: ' + exp.path + '\n  ';
+            }
+            if (exp.request) {
+                yaml += 'request: ' + exp.request + '\n  ';
+            }
+            yaml += 'status: ' + exp.status + '\n  ';
+
+            if (exp.headers && Object.keys(exp.headers).length > 0) {
+                yaml += 'headers:\n';
+                for (var key in exp.headers) {
+                    yaml += '    ' + key + ': ' + exp.headers[key] + '\n';
+                }
+                yaml += '  ';
+            }
+
+            if (exp.mock) {
+                var mockValue = exp.mock.replace(/\n/g, '\\n').replace(/"/g, '\\"');
+                yaml += 'mock: "' + mockValue + '"\n';
+            }
+
+            if (i < data.length - 1) {
+                yaml += '\n';
+            }
+        }
+        return yaml;
+    }
+
+    function downloadFile(content, filename, mimeType) {
+        var blob = new Blob([content], { type: mimeType });
+        var url = window.URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    }
+
+    function getTimestamp() {
+        var now = new Date();
+        return now.getFullYear() +
+               pad(now.getMonth() + 1) +
+               pad(now.getDate()) + '_' +
+               pad(now.getHours()) +
+               pad(now.getMinutes()) +
+               pad(now.getSeconds());
+    }
+
+    function pad(num) {
+        return num < 10 ? '0' + num : num;
+    }
+
+    function resetForm() {
+        $('#expectationForm')[0].reset();
+        $('#headers').val('{}');
+        $('#expectationId').val('');
+    }
+
+    // Handle form submission
+    $('#expectationForm').submit(function(e) {
+        e.preventDefault();
+
+        var formData = {
+            status: parseInt($('#status').val())
+        };
+
+        var method = $('#method').val();
+        if (method) {
+            formData.method = method;
+        }
+
+        var path = $('#path').val();
+        if (path) {
+            formData.path = path;
+        }
+
+        var request = $('#request').val();
+        if (request) {
+            formData.request = request;
+        }
+
+        var mock = $('#mock').val();
+        if (mock) {
+            formData.mock = mock;
+        }
+
+        var headers = $('#headers').val();
+        try {
+            if (headers && headers.trim() !== '{}' && headers.trim() !== '') {
+                formData.headers = JSON.parse(headers);
+            }
+        } catch (e) {
+            showFlash('Invalid JSON format in headers field', 'error');
+            return;
+        }
+
+        var expectationId = $('#expectationId').val();
+        var isEdit = expectationId !== '';
+        var url = isEdit ? '/api/expectation/' + expectationId : '/api/expectation';
+        var httpMethod = isEdit ? 'PUT' : 'POST';
+        var successMessage = isEdit ? 'Expectation updated successfully!' : 'Expectation added successfully!';
+
+        $.ajax({
+            url: url,
+            type: httpMethod,
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function() {
+                showFlash(successMessage, 'success');
+                resetForm();
+                $('#addExpectationForm').slideUp();
+                $('#addExpectationBtn').show();
+                loadExpectations();
+            },
+            error: function(xhr) {
+                showFlash('Error saving expectation: ' + xhr.responseText, 'error');
+            }
+        });
+    });
+
+    // Handle delete button with confirmation
+    $(document).on('click', '.btn-delete', function() {
+        var id = $(this).data('id');
+        var $btn = $(this);
+        var originalHtml = $btn.html();
+
+        // Change button to confirm state
+        $btn.html('<span class="glyphicon glyphicon-question-sign"></span> Confirm?')
+            .removeClass('btn-danger')
+            .addClass('btn-warning');
+
+        // Add a temporary confirm button
+        var $confirmBtn = $('<button class="btn btn-sm btn-danger" style="margin-left: 5px;">Yes, Delete</button>');
+        var $cancelBtn = $('<button class="btn btn-sm btn-default" style="margin-left: 5px;">Cancel</button>');
+
+        $btn.after($confirmBtn).after($cancelBtn);
+
+        // Handle confirmation
+        $confirmBtn.one('click', function() {
+            $.ajax({
+                url: '/api/expectation/' + id,
+                type: 'DELETE',
+                success: function() {
+                    showFlash('Expectation deleted successfully!', 'success');
+                    loadExpectations();
+                },
+                error: function(xhr) {
+                    showFlash('Error deleting expectation: ' + xhr.responseText, 'error');
+                }
+            });
+        });
+
+        // Handle cancellation
+        $cancelBtn.one('click', function() {
+            $btn.html(originalHtml)
+                .removeClass('btn-warning')
+                .addClass('btn-danger');
+            $confirmBtn.remove();
+            $cancelBtn.remove();
+        });
+
+        // Auto-cancel after 5 seconds
+        setTimeout(function() {
+            if ($cancelBtn.parent().length) {
+                $btn.html(originalHtml)
+                    .removeClass('btn-warning')
+                    .addClass('btn-danger');
+                $confirmBtn.remove();
+                $cancelBtn.remove();
+            }
+        }, 5000);
+    });
+
+    // Handle edit button
+    $(document).on('click', '.btn-edit', function() {
+        var id = $(this).data('id');
+
+        // Fetch the expectation details
+        $.get('/api/expectations', function(expectations) {
+            var expectation = expectations.find(function(exp) {
+                return exp.id === id;
+            });
+
+            if (!expectation) {
+                showFlash('Expectation not found', 'error');
+                return;
+            }
+
+            // Populate the form
+            $('#expectationId').val(expectation.id);
+            $('#method').val(expectation.method || '');
+            $('#path').val(expectation.path || '');
+            $('#request').val(expectation.request || '');
+            $('#status').val(expectation.status);
+
+            if (expectation.headers && Object.keys(expectation.headers).length > 0) {
+                $('#headers').val(JSON.stringify(expectation.headers, null, 2));
+            } else {
+                $('#headers').val('{}');
+            }
+
+            $('#mock').val(expectation.mock || '');
+
+            // Update form UI
+            $('#formTitle').text('Edit Expectation');
+            $('#submitBtn').text('Update Expectation');
+            $('#addExpectationBtn').hide();
+            $('#addExpectationForm').slideDown();
+
+            // Scroll to form
+            $('html, body').animate({
+                scrollTop: $('#addExpectationForm').offset().top - 20
+            }, 500);
+        }).fail(function() {
+            showFlash('Failed to load expectation details', 'error');
+        });
+    });
+});
+</script>

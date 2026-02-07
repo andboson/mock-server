@@ -74,8 +74,37 @@ func (h *Server) RemoveExpectationHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UpdateExpectationHandler updates an existing expectation.
+func (h *Server) UpdateExpectationHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "Missing id parameter", http.StatusBadRequest)
+		return
+	}
+
+	var req models.Expectation
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.store.UpdateExpectation(id, &req); err != nil {
+		log.Printf("Failed to update expectation: %v", err)
+		http.Error(w, fmt.Sprintf("Failed to update expectation: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(map[string]any{
+		"id": id,
+	}); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
+
 // GetAllExpectationsHandler returns all available expectations.
-func (h *Server) GetAllExpectationsHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Server) GetAllExpectationsHandler(w http.ResponseWriter, _ *http.Request) {
 	exps := h.store.DumpAvailableExpectations()
 
 	w.Header().Set("Content-Type", "application/json")

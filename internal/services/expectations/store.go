@@ -72,6 +72,33 @@ func (s *Store) RemoveExpectation(id string) error {
 	return fmt.Errorf("expectation not found")
 }
 
+// UpdateExpectation updates an existing expectation by ID.
+func (s *Store) UpdateExpectation(id string, updated *models.Expectation) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, e := range s.expectations {
+		if e.ID.String() == id {
+			if err := updated.Compile(); err != nil {
+				return fmt.Errorf("failed to compile regexp: %w", err)
+			}
+
+			if err := updated.CheckMockResponse(); err != nil {
+				return fmt.Errorf("failed to check mock response: %w", err)
+			}
+
+			// Preserve the ID and matched count
+			updated.ID = e.ID
+			updated.MatchedCount = e.MatchedCount
+
+			s.expectations[i] = updated
+			return nil
+		}
+	}
+
+	return fmt.Errorf("expectation not found")
+}
+
 // AddHistory adds a recorded request to the history.
 func (s *Store) AddHistory(item models.HistoryItem) {
 	s.mu.Lock()
