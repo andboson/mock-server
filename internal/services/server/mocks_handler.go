@@ -28,6 +28,10 @@ func (h *Server) ServeMocks(w http.ResponseWriter, r *http.Request) {
 
 	bodyStr := string(bodyBytes)
 
+	if r.Method == http.MethodGet {
+		bodyStr = r.URL.Query().Encode()
+	}
+
 	// Attempt to match
 	exp, found := h.store.FindMatch(r.Method, r.URL.Path, bodyStr)
 
@@ -60,6 +64,12 @@ func (h *Server) ServeMocks(w http.ResponseWriter, r *http.Request) {
 	// Write response headers
 	for k, v := range exp.ResponseHeaders {
 		w.Header().Set(k, v)
+	}
+
+	// If no Content-Type header is set, use the Accept header from the request
+	if len(exp.ResponseHeaders) == 0 {
+		accept := r.Header.Get("Accept")
+		w.Header().Set("Content-Type", accept)
 	}
 
 	// Write status code

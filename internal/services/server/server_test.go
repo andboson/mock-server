@@ -18,6 +18,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func strPtr(s string) *string {
+	return &s
+}
+
 func TestNewServer(t *testing.T) {
 	tpls, err := templates.NewTemplates()
 	require.NoError(t, err)
@@ -63,8 +67,8 @@ func TestServer_Handler_ServeMocks(t *testing.T) {
 	store := expectations.NewStore()
 
 	exp := models.Expectation{
-		Method:       "GET",
-		Path:         "/api/test",
+		Method:       strPtr("GET"),
+		Path:         strPtr("/api/test"),
 		StatusCode:   200,
 		MockResponse: "mocked response",
 	}
