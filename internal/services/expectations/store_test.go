@@ -3,6 +3,7 @@ package expectations
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -266,4 +267,44 @@ func TestStore_Concurrency(t *testing.T) {
 	<-done
 
 	require.Len(t, s.GetHistory(false), 100)
+}
+
+func TestStore_RecordMatch_Concurrent(t *testing.T) {
+	s := NewStore()
+	e := &models.Expectation{Method: strPtr("GET"), Path: strPtr("/x"), StatusCode: 200}
+	require.NoError(t, s.AddExpectation(e))
+	id := e.ID.String()
+
+	done := make(chan struct{})
+	var readers sync.WaitGroup
+	readers.Add(1)
+	go func() {
+		defer readers.Done()
+		for {
+			select {
+			case <-done:
+				return
+			default:
+				_ = s.DumpAvailableExpectations()
+			}
+		}
+	}()
+
+	var wg sync.WaitGroup
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 20; j++ {
+				s.RecordMatch(e)
+			}
+		}()
+	}
+	wg.Wait()
+	close(done)
+	readers.Wait()
+
+	n, err := s.MatchedCount(id)
+	require.NoError(t, err)
+	require.Equal(t, 1000, n)
 }

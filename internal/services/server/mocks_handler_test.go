@@ -62,6 +62,10 @@ func TestServer_ServeMocks(t *testing.T) {
 		require.True(t, history[0].MockMatched)
 		require.Equal(t, `{"result":"success"}`, history[0].BodyMock)
 		require.Equal(t, "/api/data", history[0].URL.Path)
+
+		cnt, err := store.MatchedCount(exp.ID.String())
+		require.NoError(t, err)
+		require.Equal(t, 1, cnt)
 	})
 
 	t.Run("Match not found", func(t *testing.T) {

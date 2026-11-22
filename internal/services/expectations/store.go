@@ -165,3 +165,22 @@ func (s *Store) AddExpectations(expectations []models.Expectation) error {
 
 	return nil
 }
+
+// RecordMatch increments the matched count of e. Safe for concurrent use.
+func (s *Store) RecordMatch(e *models.Expectation) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	e.IncrementMatchedCount()
+}
+
+// MatchedCount returns how many requests matched the expectation with the given ID.
+func (s *Store) MatchedCount(id string) (int, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, e := range s.expectations {
+		if e.ID.String() == id {
+			return e.MatchedCount, nil
+		}
+	}
+	return 0, fmt.Errorf("expectation not found")
+}

@@ -34,6 +34,9 @@ func (h *Server) ServeMocks(w http.ResponseWriter, r *http.Request) {
 
 	// Attempt to match
 	exp, found := h.store.FindMatch(r.Method, r.URL.Path, bodyStr)
+	if found {
+		h.store.RecordMatch(exp)
+	}
 
 	// Create history item
 	// We pass a dereferenced request (copy), but since we restored the body, it can be read again.
@@ -49,7 +52,6 @@ func (h *Server) ServeMocks(w http.ResponseWriter, r *http.Request) {
 	} else {
 		histItem.MockMatched = found
 		if found {
-			exp.IncrementMatchedCount()
 			histItem.BodyMock = exp.MockResponse
 		}
 		h.store.AddHistory(*histItem)
