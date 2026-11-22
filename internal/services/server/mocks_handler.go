@@ -2,12 +2,15 @@ package server
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"log"
 	"net/http"
 
 	"github.com/andboson/mock-server/internal/models"
 )
+
+const maxRequestBodyBytes = 10 << 20
 
 // ServeHTTP handles the incoming HTTP request.
 func (h *Server) ServeMocks(w http.ResponseWriter, r *http.Request) {
@@ -16,8 +19,14 @@ func (h *Server) ServeMocks(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.NoBody
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
+		var tooBig *http.MaxBytesError
+		if errors.As(err, &tooBig) {
+			http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, "Error reading request body", http.StatusInternalServerError)
 		return
 	}

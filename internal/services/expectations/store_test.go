@@ -308,3 +308,25 @@ func TestStore_RecordMatch_Concurrent(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1000, n)
 }
+
+func TestStore_HistoryLimit(t *testing.T) {
+	add := func(s *Store) {
+		for _, b := range []string{"1", "2", "3", "4", "5"} {
+			s.AddHistory(models.HistoryItem{BodyOriginal: b})
+		}
+	}
+
+	s := NewStore()
+	s.SetHistoryLimit(3)
+	add(s)
+	h := s.GetHistory(false)
+	require.Len(t, h, 3)
+	require.Equal(t, "3", h[0].BodyOriginal)
+	require.Equal(t, "4", h[1].BodyOriginal)
+	require.Equal(t, "5", h[2].BodyOriginal)
+
+	s = NewStore()
+	s.SetHistoryLimit(0)
+	add(s)
+	require.Len(t, s.GetHistory(false), 5)
+}

@@ -12,6 +12,7 @@ import (
 type Store struct {
 	expectations []*models.Expectation
 	history      []models.HistoryItem
+	historyLimit int
 	mu           sync.RWMutex
 }
 
@@ -99,11 +100,22 @@ func (s *Store) UpdateExpectation(id string, updated *models.Expectation) error 
 	return fmt.Errorf("expectation not found")
 }
 
+// SetHistoryLimit sets how many history items are kept (oldest dropped first). 0 means unlimited.
+func (s *Store) SetHistoryLimit(n int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.historyLimit = n
+}
+
 // AddHistory adds a recorded request to the history.
 func (s *Store) AddHistory(item models.HistoryItem) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.history = append(s.history, item)
+	if s.historyLimit > 0 && len(s.history) > s.historyLimit {
+		s.history[0] = models.HistoryItem{}
+		s.history = s.history[1:]
+	}
 }
 
 // FindMatch searches for an expectation that matches the given method, path, and body.
