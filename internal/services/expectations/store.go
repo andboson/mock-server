@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"andboson/mock-server/internal/models"
+	"github.com/andboson/mock-server/internal/models"
 )
 
 // Store holds the expectations and request history in memory.

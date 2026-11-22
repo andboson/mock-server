@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"andboson/mock-server/internal/models"
+	"github.com/andboson/mock-server/internal/models"
 
 	"gopkg.in/yaml.v2"
 )

@@ -4,10 +4,10 @@ import (
 	"log"
 	"os"
 
-	"andboson/mock-server/internal/config"
-	"andboson/mock-server/internal/services/expectations"
-	"andboson/mock-server/internal/services/server"
-	"andboson/mock-server/internal/templates"
+	"github.com/andboson/mock-server/internal/config"
+	"github.com/andboson/mock-server/internal/services/expectations"
+	"github.com/andboson/mock-server/internal/services/server"
+	"github.com/andboson/mock-server/internal/templates"
 )
 
 func main() {

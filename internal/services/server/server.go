@@ -7,8 +7,8 @@ import (
 	"net"
 	"net/http"
 
-	"andboson/mock-server/internal/services/expectations"
-	"andboson/mock-server/internal/templates"
+	"github.com/andboson/mock-server/internal/services/expectations"
+	"github.com/andboson/mock-server/internal/templates"
 )
 
 const (
