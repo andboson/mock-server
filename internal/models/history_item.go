@@ -3,6 +3,7 @@ package models
 import (
 	"bytes"
 	"fmt"
+	"html"
 	"html/template"
 	"io"
 	"net/http"
@@ -26,20 +27,20 @@ func (hi *HistoryItem) String() string {
 	return fmt.Sprintf("HistoryItem(Date=%s, MockMatched=%t, CurlCommand=%s)", hi.Date.Format(time.RFC3339), hi.MockMatched, hi.CurlCommand)
 }
 
-// PrintString returns unescaped html string
+// PrintString returns html with request and mock data escaped
 func (hi *HistoryItem) PrintString() template.HTML {
 	buff := bytes.NewBuffer(nil)
 	fmt.Fprintf(
 		buff,
 		"<pre >request:<code class=\"language-json\">%s</code></pre>",
-		hi.Dump,
+		html.EscapeString(hi.Dump),
 	)
 
 	if hi.BodyMock != "" {
 		fmt.Fprintf(
 			buff,
 			"<pre>mock response:<code class=\"language-json\">%s</code></pre>",
-			hi.BodyMock,
+			html.EscapeString(hi.BodyMock),
 		)
 	} else if !hi.MockMatched {
 		fmt.Fprintf(
