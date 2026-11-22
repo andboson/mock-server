@@ -119,3 +119,41 @@ func TestLoadExpectationsFromTestData(t *testing.T) {
 		require.Equal(t, 200, e.StatusCode)
 	})
 }
+
+func TestLoadExpectationsFromFile_Extensions(t *testing.T) {
+	yamlBody := "- method: GET\n  path: /up\n  status: 200\n"
+	jsonBody := `[{"method":"GET","path":"/up","status":200}]`
+
+	for name, tc := range map[string]struct {
+		file, body string
+		wantErr    bool
+	}{
+		"upper yaml": {"expectations.YAML", yamlBody, false},
+		"upper json": {"expectations.JSON", jsonBody, false},
+		"txt":        {"expectations.txt", jsonBody, true},
+		"no ext":     {"expectations", jsonBody, true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), tc.file)
+			require.NoError(t, os.WriteFile(path, []byte(tc.body), 0o644))
+			c := &Config{}
+			err := c.LoadExpectationsFromFile(path)
+			if tc.wantErr {
+				require.ErrorContains(t, err, "unsupported")
+				require.Empty(t, c.Expectations())
+				return
+			}
+			require.NoError(t, err)
+			require.Len(t, c.Expectations(), 1)
+		})
+	}
+
+	t.Run("NewConfig", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "expectations.txt")
+		require.NoError(t, os.WriteFile(path, []byte(jsonBody), 0o644))
+		t.Setenv("EXPECTATIONS_CONFIG_JSON", "")
+		t.Setenv("EXPECTATIONS_FILE", path)
+		_, err := NewConfig()
+		require.Error(t, err)
+	})
+}

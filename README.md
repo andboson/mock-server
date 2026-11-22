@@ -25,7 +25,7 @@ The server is configured using Environment Variables:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `SERVER_ADDR_HTTP` | Address and port to listen on. | `:8081` |
-| `EXPECTATIONS_FILE` | Path to a JSON or YAML file containing expectations. | - |
+| `EXPECTATIONS_FILE` | Path to a JSON or YAML file (.json, .yaml or .yml, case-insensitive) containing expectations. | - |
 | `EXPECTATIONS_CONFIG_JSON` | JSON string containing expectations (useful for single-line config). | - |
 
 ### Expectation Format
