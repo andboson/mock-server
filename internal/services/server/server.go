@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/andboson/mock-server/internal/services/expectations"
 	"github.com/andboson/mock-server/internal/templates"
@@ -37,7 +39,9 @@ func NewServer(addr string, tpls *templates.Templates, store *expectations.Store
 		address: addr,
 		store:   store,
 		server: &http.Server{
-			Handler: mux,
+			Handler:           mux,
+			ReadHeaderTimeout: 10 * time.Second,
+			IdleTimeout:       120 * time.Second,
 		},
 	}
 
@@ -64,7 +68,7 @@ func (s *Server) Start() error {
 	for _, exp := range s.store.DumpAvailableExpectations() {
 		log.Println(exp.String())
 	}
-	if err := s.server.Serve(ln); err != nil {
+	if err := s.server.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("can't start Server: %w", err)
 	}
 

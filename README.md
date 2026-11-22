@@ -27,6 +27,9 @@ The server is configured using Environment Variables:
 | `SERVER_ADDR_HTTP` | Address and port to listen on. | `:8081` |
 | `EXPECTATIONS_FILE` | Path to a JSON or YAML file containing expectations. | - |
 | `EXPECTATIONS_CONFIG_JSON` | JSON string containing expectations (useful for single-line config). | - |
+| `HISTORY_LIMIT` | Maximum number of requests kept in the history (oldest dropped first). `0` means unlimited. | `1000` |
+
+Request bodies over 10 MiB are rejected with `413`.
 
 ### Expectation Format
 

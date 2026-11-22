@@ -201,4 +201,15 @@ func TestServer_ServeMocks(t *testing.T) {
 		body, _ := io.ReadAll(resp.Body)
 		require.Contains(t, string(body), "Error reading request body")
 	})
+
+	t.Run("Body too large", func(t *testing.T) {
+		srv := &Server{store: expectations.NewStore()}
+
+		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(bytes.Repeat([]byte("a"), maxRequestBodyBytes+1)))
+		w := httptest.NewRecorder()
+
+		srv.ServeMocks(w, req)
+
+		require.Equal(t, http.StatusRequestEntityTooLarge, w.Result().StatusCode)
+	})
 }
