@@ -1,4 +1,4 @@
-module andboson/mock-server
+module github.com/andboson/mock-server
 
 go 1.25.5
 

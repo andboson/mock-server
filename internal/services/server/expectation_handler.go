@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"andboson/mock-server/internal/models"
+	"github.com/andboson/mock-server/internal/models"
 )
 
 // AddExpectationHandler handles the creation of a new expectation via API.

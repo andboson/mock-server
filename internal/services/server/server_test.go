@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"andboson/mock-server/internal/models"
-	"andboson/mock-server/internal/services/expectations"
-	"andboson/mock-server/internal/templates"
+	"github.com/andboson/mock-server/internal/models"
+	"github.com/andboson/mock-server/internal/services/expectations"
+	"github.com/andboson/mock-server/internal/templates"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

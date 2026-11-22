@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"andboson/mock-server/internal/models"
+	"github.com/andboson/mock-server/internal/models"
 
 	"github.com/stretchr/testify/require"
 )

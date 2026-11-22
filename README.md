@@ -190,7 +190,7 @@ The project includes a Go client library in `pkg/client` for interacting with th
 ### Installation
 
 ```bash
-go get andboson/mock-server/pkg/client
+go get github.com/andboson/mock-server/pkg/client
 ```
 
 ### Usage Example
@@ -203,7 +203,7 @@ import (
 	"fmt"
 	"log"
 
-	"andboson/mock-server/pkg/client"
+	"github.com/andboson/mock-server/pkg/client"
 )
 
 func main() {

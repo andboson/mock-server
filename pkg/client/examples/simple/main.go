@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"andboson/mock-server/pkg/client"
+	"github.com/andboson/mock-server/pkg/client"
 )
 
 func main() {

@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"andboson/mock-server/internal/models"
-	"andboson/mock-server/internal/services/expectations"
+	"github.com/andboson/mock-server/internal/models"
+	"github.com/andboson/mock-server/internal/services/expectations"
 
 	"github.com/stretchr/testify/require"
 )
