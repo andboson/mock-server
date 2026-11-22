@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/andboson/mock-server/internal/models"
 )
+
+const errFileMock = "file-based mock responses cannot be set via the API"
 
 // AddExpectationHandler handles the creation of a new expectation via API.
 func (h *Server) AddExpectationHandler(w http.ResponseWriter, r *http.Request) {
@@ -18,6 +21,10 @@ func (h *Server) AddExpectationHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.Expectation
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if strings.HasPrefix(req.MockResponse, "@") {
+		http.Error(w, errFileMock, http.StatusBadRequest)
 		return
 	}
 	if err := h.store.AddExpectation(&req); err != nil {
@@ -86,6 +93,18 @@ func (h *Server) UpdateExpectationHandler(w http.ResponseWriter, r *http.Request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	if strings.HasPrefix(req.MockResponse, "@") {
+		existing, err := h.store.GetExpectation(id)
+		if err != nil {
+			http.Error(w, "Expectation not found", http.StatusNotFound)
+			return
+		}
+		if existing.FileSourceOriginal != req.MockResponse {
+			http.Error(w, errFileMock, http.StatusBadRequest)
+			return
+		}
 	}
 
 	if err := h.store.UpdateExpectation(id, &req); err != nil {

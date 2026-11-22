@@ -39,7 +39,7 @@ Each expectation is an object with the following fields:
 - `status`: HTTP Status Code to return (e.g., 200, 404). Defaults to 200 if not specified.
 - `headers`: Map of HTTP headers to include in the response.
   - If the `headers` map is empty or omitted entirely, the server automatically uses the request's `Accept` header as the `Content-Type` in the response.
-- `mock`: The response body string. Can start with `@` to load from a file (e.g. `@/path/to/response.json`).
+- `mock`: The response body string. Can start with `@` to load from a file (e.g. `@/path/to/response.json`). File references (`@...`) are only honored in the startup config; the REST API rejects them, except when re-saving an unchanged file-backed expectation.
 
 #### Example `expectations.yaml`
 

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/andboson/mock-server/internal/models"
@@ -199,4 +201,61 @@ func TestServer_GetAllExpectationsHandler(t *testing.T) {
 	err := json.NewDecoder(resp.Body).Decode(&respExps)
 	require.NoError(t, err)
 	require.Len(t, respExps, 2)
+}
+
+func putExpectation(srv *Server, id, body string) *http.Response {
+	req := httptest.NewRequest(http.MethodPut, "/api/expectation/"+id, bytes.NewBufferString(body))
+	req.SetPathValue("id", id)
+	w := httptest.NewRecorder()
+	srv.UpdateExpectationHandler(w, req)
+	return w.Result()
+}
+
+func TestServer_FileMockRejectedViaAPI(t *testing.T) {
+	t.Run("POST rejects @file", func(t *testing.T) {
+		store := expectations.NewStore()
+		srv := &Server{store: store}
+		req := httptest.NewRequest(http.MethodPost, "/api/expectation", bytes.NewBufferString(`{"mock":"@/etc/hostname"}`))
+		w := httptest.NewRecorder()
+		srv.AddExpectationHandler(w, req)
+		require.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+		require.Empty(t, store.DumpAvailableExpectations())
+	})
+
+	t.Run("PUT rejects @file on plain expectation", func(t *testing.T) {
+		store := expectations.NewStore()
+		srv := &Server{store: store}
+		exp := &models.Expectation{MockResponse: "plain"}
+		require.NoError(t, store.AddExpectation(exp))
+		resp := putExpectation(srv, exp.ID.String(), `{"mock":"@/etc/hostname"}`)
+		defer func() { _ = resp.Body.Close() }()
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		got, err := store.GetExpectation(exp.ID.String())
+		require.NoError(t, err)
+		require.Equal(t, "plain", got.MockResponse)
+	})
+
+	t.Run("PUT unchanged @file on file-backed expectation", func(t *testing.T) {
+		store := expectations.NewStore()
+		srv := &Server{store: store}
+		path := filepath.Join(t.TempDir(), "r.json")
+		require.NoError(t, os.WriteFile(path, []byte("hi"), 0o600))
+		exp := &models.Expectation{MockResponse: "@" + path}
+		require.NoError(t, store.AddExpectation(exp))
+		resp := putExpectation(srv, exp.ID.String(), `{"mock":"@`+path+`"}`)
+		defer func() { _ = resp.Body.Close() }()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+
+	t.Run("PUT different @file on file-backed expectation", func(t *testing.T) {
+		store := expectations.NewStore()
+		srv := &Server{store: store}
+		path := filepath.Join(t.TempDir(), "r.json")
+		require.NoError(t, os.WriteFile(path, []byte("hi"), 0o600))
+		exp := &models.Expectation{MockResponse: "@" + path}
+		require.NoError(t, store.AddExpectation(exp))
+		resp := putExpectation(srv, exp.ID.String(), `{"mock":"@/etc/hostname"}`)
+		defer func() { _ = resp.Body.Close() }()
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
 }
