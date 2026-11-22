@@ -190,7 +190,7 @@ The project includes a Go client library in `pkg/client` for interacting with th
 ### Installation
 
 ```bash
-go get github.com/andboson/mock-server/pkg/client
+go get github.com/andboson/mock-server/pkg/client@v1.4.0
 ```
 
 ### Usage Example

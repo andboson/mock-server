@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.2.1
 
 # Start from the latest golang base image
-FROM public.ecr.aws/docker/library/golang:1.25.5-bookworm@sha256:019c22232e57fda8ded2b10a8f201989e839f3d3f962d4931375069bbb927e03 as builder
+FROM public.ecr.aws/docker/library/golang:1.27.4-bookworm@sha256:4fa7c968ba93f1635670522dbb01a2c78150443e1385746924566079f36570ea as builder
 
 
 # Set the Current Working Directory inside the container
@@ -21,10 +21,7 @@ ENV REVISION ${REVISION}
 RUN  make build
 
 ######## Start a new stage from scratch #######
-FROM public.ecr.aws/bitnami/minideb:bullseye@sha256:a6f3a96622f1a2e0eb049e08e3aa4db29c725318c7f410a050f333e074793e88
-
-RUN install_packages ca-certificates && \
-    update-ca-certificates
+FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2
 
 WORKDIR /app
 
