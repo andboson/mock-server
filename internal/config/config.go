@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/andboson/mock-server/internal/models"
@@ -65,16 +66,17 @@ func (ec *Config) LoadExpectationsFromFile(fileName string) error {
 
 	var expectations []models.Expectation
 
-	if strings.HasSuffix(fileName, ".yaml") || strings.HasSuffix(fileName, ".yml") {
+	switch strings.ToLower(filepath.Ext(fileName)) {
+	case ".yaml", ".yml":
 		if err := yaml.Unmarshal(data, &expectations); err != nil {
 			return fmt.Errorf("loading expectations from file: %w", err)
 		}
-	}
-
-	if strings.HasSuffix(fileName, ".json") {
+	case ".json":
 		if err := json.Unmarshal(data, &expectations); err != nil {
 			return fmt.Errorf("loading expectations from file: %w", err)
 		}
+	default:
+		return fmt.Errorf("unsupported expectations file extension %q (want .json, .yaml or .yml)", filepath.Ext(fileName))
 	}
 
 	ec.expectations = append(ec.expectations, expectations...)
