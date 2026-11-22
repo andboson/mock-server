@@ -357,3 +357,29 @@ func TestStore_ClearExpectations(t *testing.T) {
 	_, ok = s.FindMatch("GET", "/x", "")
 	require.False(t, ok)
 }
+
+func TestStore_HistoryConcurrentAtLimit(t *testing.T) {
+	s := NewStore()
+	s.SetHistoryLimit(3)
+	for i := 0; i < 3; i++ {
+		s.AddHistory(models.HistoryItem{})
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 2000; i++ {
+			s.AddHistory(models.HistoryItem{BodyMock: "x"})
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 2000; i++ {
+			for _, h := range s.GetHistory(false) {
+				_ = h.BodyMock
+			}
+		}
+	}()
+	wg.Wait()
+}
