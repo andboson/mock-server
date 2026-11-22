@@ -138,11 +138,11 @@ func (s *Store) GetHistory(reverse bool) []models.HistoryItem {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
+	reversed := append([]models.HistoryItem{}, s.history...)
 	if !reverse {
-		return s.history
+		return reversed
 	}
 
-	reversed := append([]models.HistoryItem{}, s.history...)
 	for i, j := 0, len(reversed)-1; i < j; i, j = i+1, j-1 {
 		reversed[i], reversed[j] = reversed[j], reversed[i]
 	}
@@ -195,4 +195,18 @@ func (s *Store) MatchedCount(id string) (int, error) {
 		}
 	}
 	return 0, fmt.Errorf("expectation not found")
+}
+
+// ClearHistory removes all recorded requests.
+func (s *Store) ClearHistory() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.history = make([]models.HistoryItem, 0)
+}
+
+// ClearExpectations removes all expectations (and with them their match counts).
+func (s *Store) ClearExpectations() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.expectations = make([]*models.Expectation, 0)
 }

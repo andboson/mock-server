@@ -1,5 +1,7 @@
 package client
 
+import "time"
+
 // Expectation represents a registered mock expectation.
 type Expectation struct {
 	ID           string            `json:"id"`
@@ -31,4 +33,18 @@ type ExpectationID struct {
 type MatchStatus struct {
 	Matched      bool `json:"matched"`
 	MatchedCount int  `json:"matched_count"`
+}
+
+// HistoryEntry is a request received by the mock server.
+type HistoryEntry struct {
+	Date          time.Time           `json:"date"`
+	Method        string              `json:"method"`
+	Path          string              `json:"path"`
+	Query         string              `json:"query,omitempty"`
+	Headers       map[string][]string `json:"headers"`
+	Body          string              `json:"body"`
+	Matched       bool                `json:"matched"`
+	ExpectationID string              `json:"expectation_id,omitempty"`
+	Response      string              `json:"response,omitempty"`
+	Curl          string              `json:"curl"`
 }

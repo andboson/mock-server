@@ -330,3 +330,56 @@ func TestStore_HistoryLimit(t *testing.T) {
 	add(s)
 	require.Len(t, s.GetHistory(false), 5)
 }
+
+func TestStore_ClearHistory(t *testing.T) {
+	s := NewStore()
+	s.AddHistory(models.HistoryItem{BodyOriginal: "1"})
+	s.AddHistory(models.HistoryItem{BodyOriginal: "2"})
+	s.ClearHistory()
+	require.Empty(t, s.GetHistory(false))
+
+	s.SetHistoryLimit(1)
+	s.AddHistory(models.HistoryItem{BodyOriginal: "3"})
+	s.AddHistory(models.HistoryItem{BodyOriginal: "4"})
+	require.Len(t, s.GetHistory(false), 1)
+}
+
+func TestStore_ClearExpectations(t *testing.T) {
+	s := NewStore()
+	p := "/x"
+	require.NoError(t, s.AddExpectation(&models.Expectation{Path: &p}))
+	require.NoError(t, s.AddExpectation(&models.Expectation{Path: &p}))
+	_, ok := s.FindMatch("GET", "/x", "")
+	require.True(t, ok)
+
+	s.ClearExpectations()
+	require.Empty(t, s.DumpAvailableExpectations())
+	_, ok = s.FindMatch("GET", "/x", "")
+	require.False(t, ok)
+}
+
+func TestStore_HistoryConcurrentAtLimit(t *testing.T) {
+	s := NewStore()
+	s.SetHistoryLimit(3)
+	for i := 0; i < 3; i++ {
+		s.AddHistory(models.HistoryItem{})
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 2000; i++ {
+			s.AddHistory(models.HistoryItem{BodyMock: "x"})
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 2000; i++ {
+			for _, h := range s.GetHistory(false) {
+				_ = h.BodyMock
+			}
+		}
+	}()
+	wg.Wait()
+}

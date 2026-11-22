@@ -50,6 +50,9 @@ func NewServer(addr string, tpls *templates.Templates, store *expectations.Store
 	mux.HandleFunc("PUT /api/expectation/{id}", s.UpdateExpectationHandler)
 	mux.HandleFunc("DELETE /api/expectation/{id}", s.RemoveExpectationHandler)
 	mux.HandleFunc("GET /api/expectations", s.GetAllExpectationsHandler)
+	mux.HandleFunc("DELETE /api/expectations", s.ClearExpectationsHandler)
+	mux.HandleFunc("GET /api/history", s.GetHistoryHandler)
+	mux.HandleFunc("DELETE /api/history", s.ClearHistoryHandler)
 	mux.HandleFunc("GET /expectations-ui", s.ExpectationsUIHandler)
 	mux.Handle("/", s.createHTTPHandler())
 

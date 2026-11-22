@@ -181,6 +181,11 @@ The server provides a REST API to manage expectations dynamically.
 - `PUT /api/expectation/{id}`: Update an existing expectation. The ID and match count are preserved.
 - `DELETE /api/expectation/{id}`: Remove an expectation.
 - `GET /api/expectations`: Get all registered expectations (includes `matched_count` for each).
+- `DELETE /api/expectations`: Remove all expectations.
+- `GET /api/history`: Get received requests as JSON, oldest first. Each entry has `method`, `path`, `query`, `headers`, `body`, `matched`, `expectation_id` (the expectation that answered it, if any), `response` and `curl`. Capped by `HISTORY_LIMIT`.
+- `DELETE /api/history`: Clear the request history.
+
+Paths under `/api/expectation`, `/api/expectations` and `/api/history` are reserved for this API and can't be mocked.
 
 ### OpenAPI Specification
 
@@ -236,5 +241,7 @@ func main() {
 	fmt.Printf("Matched: %v, Match Count: %d\n", status.Matched, status.MatchedCount)
 }
 ```
+
+Between tests, `c.GetHistory(ctx)` returns the requests the server received, and `c.ClearHistory(ctx)` / `c.ClearExpectations(ctx)` reset it.
 
 
