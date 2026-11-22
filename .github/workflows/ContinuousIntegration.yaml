@@ -32,9 +32,6 @@ jobs:
       - name: Format
         run: if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then exit 1; fi
 
-      - name: Generate mocks
-        run: make generate
-
       - name: golangci-lint
         if: github.event_name == 'pull_request'
         uses: golangci/golangci-lint-action@v9
@@ -48,6 +45,5 @@ jobs:
       - name: Run Unit Tests on changed packages
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
-          make generate
           make dep
           make test
