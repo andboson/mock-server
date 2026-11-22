@@ -136,3 +136,37 @@ func Test_Client_APIError(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "server returned error status: 400")
 }
+
+func Test_Client_History(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/history", r.URL.Path)
+		switch r.Method {
+		case http.MethodGet:
+			require.NoError(t, json.NewEncoder(w).Encode([]HistoryEntry{{Method: "GET", Path: "/a", Matched: true}}))
+		case http.MethodDelete:
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Errorf("unexpected method %s", r.Method)
+		}
+	}))
+	defer server.Close()
+
+	c := New(server.URL, nil)
+	h, err := c.GetHistory(context.Background())
+	require.NoError(t, err)
+	require.Len(t, h, 1)
+	assert.Equal(t, "/a", h[0].Path)
+	assert.True(t, h[0].Matched)
+	require.NoError(t, c.ClearHistory(context.Background()))
+}
+
+func Test_Client_ClearExpectations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodDelete, r.Method)
+		assert.Equal(t, "/api/expectations", r.URL.Path)
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	require.NoError(t, New(server.URL, nil).ClearExpectations(context.Background()))
+}

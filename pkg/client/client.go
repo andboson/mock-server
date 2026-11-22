@@ -80,6 +80,31 @@ func (c *Client) GetExpectations(ctx context.Context) ([]Expectation, error) {
 	return resp, nil
 }
 
+// GetHistory returns received requests, oldest first.
+func (c *Client) GetHistory(ctx context.Context) ([]HistoryEntry, error) {
+	var resp []HistoryEntry
+	if err := c.do(ctx, http.MethodGet, "/api/history", nil, &resp); err != nil {
+		return nil, fmt.Errorf("failed to get history: %w", err)
+	}
+	return resp, nil
+}
+
+// ClearHistory removes all recorded requests.
+func (c *Client) ClearHistory(ctx context.Context) error {
+	if err := c.do(ctx, http.MethodDelete, "/api/history", nil, nil); err != nil {
+		return fmt.Errorf("failed to clear history: %w", err)
+	}
+	return nil
+}
+
+// ClearExpectations removes all expectations.
+func (c *Client) ClearExpectations(ctx context.Context) error {
+	if err := c.do(ctx, http.MethodDelete, "/api/expectations", nil, nil); err != nil {
+		return fmt.Errorf("failed to clear expectations: %w", err)
+	}
+	return nil
+}
+
 // do simplifies making HTTP requests and decoding responses.
 func (c *Client) do(ctx context.Context, method, path string, body interface{}, result interface{}) error {
 	req, err := c.newRequest(ctx, method, path, body)

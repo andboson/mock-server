@@ -77,6 +77,31 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Expectation'
+    delete:
+      summary: Remove all expectations
+      operationId: clearExpectations
+      responses:
+        '204':
+          description: All expectations removed
+  /api/history:
+    get:
+      summary: Get received requests, oldest first
+      operationId: getHistory
+      responses:
+        '200':
+          description: List of received requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HistoryEntry'
+    delete:
+      summary: Clear request history
+      operationId: clearHistory
+      responses:
+        '204':
+          description: History cleared
 components:
   schemas:
     Expectation:
@@ -139,3 +164,33 @@ components:
           type: boolean
         matched_count:
           type: integer
+    HistoryEntry:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date-time
+        method:
+          type: string
+        path:
+          type: string
+        query:
+          type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        body:
+          type: string
+        matched:
+          type: boolean
+        expectation_id:
+          type: string
+          description: ID of the expectation that answered the request, if any
+        response:
+          type: string
+          description: Mock response body returned, if matched
+        curl:
+          type: string

@@ -15,12 +15,13 @@ import (
 
 type HistoryItem struct {
 	http.Request
-	BodyOriginal string
-	BodyMock     string
-	Dump         string
-	CurlCommand  string
-	MockMatched  bool
-	Date         time.Time
+	BodyOriginal  string
+	BodyMock      string
+	Dump          string
+	CurlCommand   string
+	MockMatched   bool
+	ExpectationID string
+	Date          time.Time
 }
 
 func (hi *HistoryItem) String() string {
@@ -95,4 +96,41 @@ type History struct {
 
 func (h *History) AddItem(item HistoryItem) {
 	h.Values = append(h.Values, item)
+}
+
+// HistoryEntry is the JSON view of a HistoryItem.
+type HistoryEntry struct {
+	Date          time.Time           `json:"date"`
+	Method        string              `json:"method"`
+	Path          string              `json:"path"`
+	Query         string              `json:"query,omitempty"`
+	Headers       map[string][]string `json:"headers"`
+	Body          string              `json:"body"`
+	Matched       bool                `json:"matched"`
+	ExpectationID string              `json:"expectation_id,omitempty"`
+	Response      string              `json:"response,omitempty"`
+	Curl          string              `json:"curl"`
+}
+
+// Entry converts the item to its JSON view.
+func (hi *HistoryItem) Entry() HistoryEntry {
+	e := HistoryEntry{
+		Date:          hi.Date,
+		Method:        hi.Method,
+		Headers:       map[string][]string{},
+		Body:          hi.BodyOriginal,
+		Matched:       hi.MockMatched,
+		ExpectationID: hi.ExpectationID,
+		Response:      hi.BodyMock,
+		Curl:          hi.CurlCommand,
+	}
+	if hi.URL != nil {
+		e.Path = hi.URL.Path
+		e.Query = hi.URL.RawQuery
+	}
+	if hi.Header != nil {
+		e.Headers = hi.Header
+	}
+
+	return e
 }

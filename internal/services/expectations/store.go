@@ -196,3 +196,17 @@ func (s *Store) MatchedCount(id string) (int, error) {
 	}
 	return 0, fmt.Errorf("expectation not found")
 }
+
+// ClearHistory removes all recorded requests.
+func (s *Store) ClearHistory() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.history = make([]models.HistoryItem, 0)
+}
+
+// ClearExpectations removes all expectations (and with them their match counts).
+func (s *Store) ClearExpectations() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.expectations = make([]*models.Expectation, 0)
+}
