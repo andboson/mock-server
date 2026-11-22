@@ -50,7 +50,7 @@ func (h *Server) CheckExpectationHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	exp, err := h.store.GetExpectation(id)
+	count, err := h.store.MatchedCount(id)
 	if err != nil {
 		http.Error(w, "Expectation not found", http.StatusNotFound)
 		return
@@ -58,8 +58,8 @@ func (h *Server) CheckExpectationHandler(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]any{
-		"matched":       exp.MatchedCount > 0,
-		"matched_count": exp.MatchedCount,
+		"matched":       count > 0,
+		"matched_count": count,
 	}); err != nil {
 		log.Printf("Failed to write response: %v", err)
 	}

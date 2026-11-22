@@ -52,6 +52,7 @@ func (e *Expectation) String() string {
 	return fmt.Sprintf("Expectation(Method=%s, Path=%s, Request=%s, StatusCode=%d)", method, path, request, e.StatusCode)
 }
 
+// IncrementMatchedCount bumps the counter; callers must hold the store lock.
 func (e *Expectation) IncrementMatchedCount() {
 	e.MatchedCount++
 }
